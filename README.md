@@ -1,17 +1,28 @@
 # Disaster Impact Analysis System (DIAS)
 
-The Disaster Impact Analysis System (DIAS) is open source  software that can be used to simulate the impacts of reoccurring flood events on real estate prices and assess flood mitigation strategies using a multi-criteria decision methods. DIAS implements a number of methods for representing the connectivity of urban spaces that can be used to model hydrologic events such as flood and storm surge events. DIAS also includes methods for analyzing mitigation strategies, along with strategy-ranking methods using multi-criteria Q-analysis (MCQA I & II).  DIAS is written in Python 3.6. and makes heavy use of [Numpy](http://www.numpy.org/) and the [Numba](https://numba.pydata.org/) JIT compiler to achieve near C performance for computations involving large sparse matrices.  
+## Overview
+The Disaster Impact Analysis System (DIAS) is open source  software that can be used to simulate the impacts of reoccurring flood events on real estate prices and assess flood mitigation strategies using a multi-criteria decision methods. 
+
+DIAS implements a number of methods for representing the connectivity of urban spaces that can be used to model hydrologic events such as flood and storm surge events. DIAS also includes methods for analyzing mitigation strategies, along with strategy-ranking methods using multi-criteria Q-analysis (MCQA I & II).  
+
+DIAS is written in Python 3.6. and makes heavy use of [Numpy](http://www.numpy.org/) and the [Numba](https://numba.pydata.org/) JIT compiler to achieve near C performance for computations involving large sparse matrices.  
 
 ## Table of Contents
-1. [Installation](#Installation)
-2. [Worflow](#Workflow)
-3. [Importing Data](#Importing Data)
-4. [Representation](#Representation)
-5. [Simulation](#Simulation)
-6. [Visualization](#Visualization)
-7. [Evaluation](#Evaluation)
-8. [Exporting Results](#Exporting Results)
-
+- [Disaster Impact Analysis System (DIAS)](#disaster-impact-analysis-system--dias-)
+  * [Overview](#overview)
+  * [Table of Contents](#table-of-contents)
+  * [Installation](#installation)
+    + [Clone or download the repository](#clone-or-download-the-repository)
+    + [Create a virtual environment](#create-a-virtual-environment)
+    + [CD and Pip](#cd-and-pip)
+  * [Workflow](#workflow)
+  * [Importing Data and Setting Attributes](#importing-data-and-setting-attributes)
+  * [Importing Data](#importing-data)
+  * [Representation](#representation)
+  * [Simulation](#simulation)
+  * [Visualization](#visualization)
+  * [Evaluation](#evaluation)
+  * [Exporting Results](#exporting-results)
 
 ## Installation
 ### Clone or download the repository
@@ -80,9 +91,13 @@ elevation_field = 'Elevation'
 
 ## Visualization
 
-## Evaluatation
+## Evaluation
 
 ## Exporting Results
+
+
+
+
 
 
 
