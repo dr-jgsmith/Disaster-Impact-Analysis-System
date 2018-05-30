@@ -8,7 +8,6 @@ DIAS implements a number of methods for representing the connectivity of urban s
 DIAS is written in Python 3.6. and makes heavy use of [Numpy](http://www.numpy.org/) and the [Numba](https://numba.pydata.org/) JIT compiler to achieve near C performance for computations involving large sparse matrices.  
 
 ## Table of Contents
-- [Disaster Impact Analysis System (DIAS)](#disaster-impact-analysis-system--dias-)
   * [Overview](#overview)
   * [Table of Contents](#table-of-contents)
   * [Installation](#installation)
