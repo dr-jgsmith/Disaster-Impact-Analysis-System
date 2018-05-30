@@ -2,14 +2,11 @@
 
 ## Overview
 The Disaster Impact Analysis System (DIAS) is open source  software that can be used to simulate the impacts of reoccurring flood events on real estate prices and assess flood mitigation strategies using a multi-criteria decision methods. 
-
 DIAS implements a number of methods for representing the connectivity of urban spaces that can be used to model hydrologic events such as flood and storm surge events. DIAS also includes methods for analyzing mitigation strategies, along with strategy-ranking methods using multi-criteria Q-analysis (MCQA I & II).  
 
 DIAS is written in Python 3.6. and makes heavy use of [Numpy](http://www.numpy.org/) and the [Numba](https://numba.pydata.org/) JIT compiler to achieve near C performance for computations involving large sparse matrices.  
 
 ## Table of Contents
-  * [Overview](#overview)
-  * [Table of Contents](#table-of-contents)
   * [Installation](#installation)
     + [Clone or download the repository](#clone-or-download-the-repository)
     + [Create a virtual environment](#create-a-virtual-environment)
@@ -47,7 +44,7 @@ The setup.py file will install the required dependencies.
 ## Workflow
 DIAS is designed primarily to process attribute data associated with [ESRI ArcGIS](https://www.esri.com/en-us/arcgis/about-arcgis/overview) or [QGIS](https://qgis.org/en/site/). These attribute files are typically stored as dBase files ending with the .dbf extension and provide additional data for analyzing spatial information. DIAS consumes and enriches these attribute files.
 
-**![](https://lh5.googleusercontent.com/9Ap-AYx1UDZNUp7itb5hcvDCXRrw1PXxR1RXend6tKE9Ott2YUljhCuJGfHu7pXBFQmAvQITydZS14JkB8557NIICIxFolllaO97X2_hFqOLqiXW5wwdSqx-ydWvSr3KjU88gg8lIuo)**
+**![Data Flow](https://lh5.googleusercontent.com/9Ap-AYx1UDZNUp7itb5hcvDCXRrw1PXxR1RXend6tKE9Ott2YUljhCuJGfHu7pXBFQmAvQITydZS14JkB8557NIICIxFolllaO97X2_hFqOLqiXW5wwdSqx-ydWvSr3KjU88gg8lIuo)**
 
 ## Importing Data and Setting Attributes
 Imported data is assumed to be in some type of tabular form and contain at a minimum, an ID such as parcel ID, longitude and latitude, land value, and the value of any structure existing on that land. Additional, attributes can be included such as ownership, flood insurance rates, and owner occupancy.
