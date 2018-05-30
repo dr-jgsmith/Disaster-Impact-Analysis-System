@@ -6,9 +6,9 @@ This begins the example use case of value_impact_analysis
 
 """
 # Begin with dBase file commonly associated with attribute data for annotating layers in a GIS
-file = "C:\\Users\\justi\\Desktop\\Ab_Hoq_Cosi_Parcels_Lat_Long_Points\\Ab_Hoq_Cosi_Parcels_Lat_Long_Critical_Facilities_NEHRP.dbf"
+file = "C:\\PATH\\TO\\MY\\DBFILE.dbf"
 # Open the file and intitialize the flood model class
-db = flood_model(file, 'AIzaSyBWEqdC3EjiDzljsSvJi3v6wUWNKQZAl_g')
+db = flood_model(file, 'GOOGLE_MAPS_API_KEY')
 
 # Define the column or id names
 # These will be hard coded and should not be allowed to change
