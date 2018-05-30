@@ -1,8 +1,7 @@
 # Disaster Impact Analysis System (DIAS)
 
 ## Overview
-The Disaster Impact Analysis System (DIAS) is open source  software that can be used to simulate the impacts of reoccurring flood events on real estate prices and assess flood mitigation strategies using a multi-criteria decision methods. 
-DIAS implements a number of methods for representing the connectivity of urban spaces that can be used to model hydrologic events such as flood and storm surge events. DIAS also includes methods for analyzing mitigation strategies, along with strategy-ranking methods using multi-criteria Q-analysis (MCQA I & II).  DIAS is written in Python 3.6. and makes heavy use of [Numpy](http://www.numpy.org/) and the [Numba](https://numba.pydata.org/) JIT compiler to achieve near C performance for computations involving large sparse matrices.  
+The Disaster Impact Analysis System (DIAS) is open source  software that can be used to simulate the impacts of reoccurring flood events on real estate prices and assess flood mitigation strategies using a multi-criteria decision methods. DIAS implements a number of methods for representing the connectivity of urban spaces that can be used to model hydrologic events such as flood and storm surge events. DIAS also includes methods for analyzing mitigation strategies, along with strategy-ranking methods using multi-criteria Q-analysis (MCQA I & II).  DIAS is written in Python 3.6. and makes heavy use of [Numpy](http://www.numpy.org/) and the [Numba](https://numba.pydata.org/) JIT compiler to achieve near C performance for computations involving large sparse matrices.  
 
 ## Table of Contents
   * [Installation](#installation)
@@ -42,7 +41,7 @@ The setup.py file will install the required dependencies.
 ## Workflow
 DIAS is designed primarily to process attribute data associated with [ESRI ArcGIS](https://www.esri.com/en-us/arcgis/about-arcgis/overview) or [QGIS](https://qgis.org/en/site/). These attribute files are typically stored as dBase files ending with the .dbf extension and provide additional data for analyzing spatial information. DIAS consumes and enriches these attribute files.
 
-**![Data Flow](https://lh5.googleusercontent.com/9Ap-AYx1UDZNUp7itb5hcvDCXRrw1PXxR1RXend6tKE9Ott2YUljhCuJGfHu7pXBFQmAvQITydZS14JkB8557NIICIxFolllaO97X2_hFqOLqiXW5wwdSqx-ydWvSr3KjU88gg8lIuo)**
+**![Data Flow](https://lh6.googleusercontent.com/NbvhAT5cnDjooWlpmdMkQWhdkGLU28BgJIZsSz6ulYNlfMORFYP0a87WSdSBs3ASl6QlM9924YUka26bSRviragoS0RDt5Vcfm9o4hgpfBPaUpMB-QB12Pcm7Zx3shIDiJSjOo2tjII)**
 
 ## Importing Data and Setting Attributes
 Imported data is assumed to be in some type of tabular form and contain at a minimum, an ID such as parcel ID, longitude and latitude, land value, and the value of any structure existing on that land. Additional, attributes can be included such as ownership, flood insurance rates, and owner occupancy.
@@ -70,14 +69,15 @@ building_value_field = 'BLDGVALUE'
 land_value_field = 'LANDVALUE'
 parcel_field = 'PARCELATT'
 ```
+
+> Note: actual field names will need to reflect the fields in your data set and should include at least *parcels, latitudes, longitudes*, and a *parcel value*
+
 Next define a new field for storing elevation data.
 
 ```python  
 # Define a new field, Elevation  
 elevation_field = 'Elevation'  
 ```
-
-## Importing Data
 
 ## Representation
 
@@ -88,6 +88,8 @@ elevation_field = 'Elevation'
 ## Evaluation
 
 ## Exporting Results
+
+
 
 
 
