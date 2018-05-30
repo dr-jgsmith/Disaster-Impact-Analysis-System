@@ -2,9 +2,7 @@
 
 ## Overview
 The Disaster Impact Analysis System (DIAS) is open source  software that can be used to simulate the impacts of reoccurring flood events on real estate prices and assess flood mitigation strategies using a multi-criteria decision methods. 
-DIAS implements a number of methods for representing the connectivity of urban spaces that can be used to model hydrologic events such as flood and storm surge events. DIAS also includes methods for analyzing mitigation strategies, along with strategy-ranking methods using multi-criteria Q-analysis (MCQA I & II).  
-
-DIAS is written in Python 3.6. and makes heavy use of [Numpy](http://www.numpy.org/) and the [Numba](https://numba.pydata.org/) JIT compiler to achieve near C performance for computations involving large sparse matrices.  
+DIAS implements a number of methods for representing the connectivity of urban spaces that can be used to model hydrologic events such as flood and storm surge events. DIAS also includes methods for analyzing mitigation strategies, along with strategy-ranking methods using multi-criteria Q-analysis (MCQA I & II).  DIAS is written in Python 3.6. and makes heavy use of [Numpy](http://www.numpy.org/) and the [Numba](https://numba.pydata.org/) JIT compiler to achieve near C performance for computations involving large sparse matrices.  
 
 ## Table of Contents
   * [Installation](#installation)
