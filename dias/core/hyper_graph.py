@@ -2,7 +2,6 @@ from numba import jit
 import numpy as np
 from scipy.sparse import csr_matrix
 import networkx as nx
-from collections import defaultdict
 """
 These functions use the Numba JIT compiler to speed up computational performance on
 large data arrays and matrices. These are particularly useful for massive matrix multiplication
@@ -16,15 +15,16 @@ This is a work in progress!!! Changes will be made...
 # Note this step can be repeated
 def computePattern(traffic_pattern_list, incidence):
     """
+    In Q-Analysis it is often the case that we want to analyze the dynamics that occur on a representation/backcloth
+    This is computed by multiplying the pattern vector on the incidence matrix of 0s and 1s.
+    Here the pattern vector correspond to the vertices.
+    
+    convert vector weights into a numpy array
+    
     :param traffic_pattern_list: ordered list of values
     :param incidence: numpy matrix
     :return: numpy matrix
     """
-    # In Q-Analysis it is often the case that we want to analyze the dynamics that occur on a representation/backcloth
-    # This is computed by multiplying the pattern vector on the incidence matrix of 0s and 1s.
-    # Here the pattern vector correspond to the vertices.
-    #wght = [i[1] for i in traffic_pattern.items()]
-    # convert vector weights into a numpy array
     try:
         vweights = np.array(traffic_pattern_list)
         # convert matrix to a numpy array
@@ -50,9 +50,11 @@ def computePattern(traffic_pattern_list, incidence):
 def addCoverPattern(cover_array, incidence):
     """
     This function is used to add a new dimension of relation to a given matrix composed of simplicies and vertices.
-    :param cover_array: 
-    :param incidence: 
-    :return: 
+    This is accomplished by the addition between two vectors.
+    
+    :param cover_array: numpy array
+    :param incidence: numpy array
+    :return: numpy array
     """
     try:
         cover = np.array(cover_array)
@@ -72,14 +74,30 @@ def addCoverPattern(cover_array, incidence):
         print('Name Error')
         pass
 
+@jit
+def invert_pattern(pattern_vector):
+    """
+    Takes a pattern vector in binarized format and inverts the pattern
+    :param pattern_vector: numpy array | 0's and 1's
+    :return: numpy array
+    """
+    inverted = np.zeros(len(pattern_vector))
+    for i in range(len(pattern_vector)):
+        if pattern_vector[i] == 0.0:
+            inverted[i] = 1.0
+        else:
+            inverted[i] = 0.0
+    return inverted
+
 
 def sparse_graph(incidence, hyperedge_list, theta):
     """
-    This function encodes a sparse matrix into a graph representation speed up computation
+    This function encodes a sparse matrix into a graph representation. 
+    This function provides a speed up in computation over the numpy matrix methods
     It can be used on both a shared face matrix or raw data input. 
-    :param incidence: binary matrix 
-    :param hyperedge_list: list of simplicies or nodes
-    :param theta: integer
+    :param incidence: numpy incidence matrix 
+    :param hyperedge_list: python list | simplicies or nodes
+    :param theta: int
     :return: list of tuples
     """
     try:
@@ -126,10 +144,12 @@ def conjugate_graph(edges):
 def dowker_relation(sparse_graph, conjugate_graph):
     """
     This provides a fast approach to computing the shared-face relation between simplicies.
-    The function takes a sparse graph and its conjugate as inputs
+    The function takes a sparse graph and its conjugate as inputs. Returns the dwoker relation + 1.
+    To compute the true relation, subtract the -1 from the relation.
+    
     :param sparse_graph: list of tuples
     :param conjugate_graph: list of tuples
-    :return: matrix
+    :return: numpy matrix
     """
     try:
         sparseg = compute_class_matrix_sparse(sparse_graph)
@@ -155,8 +175,8 @@ def simple_ecc(array):
     Compute the eccentricity of a simplex. Produced by computing the Dowker relation
     This takes a 1d array, which is typically the simplex and q-near vertices
 
-    :param array: 
-    :return: 
+    :param array: numpy array
+    :return: numpy array
     """
     loc = array.argmax()
     new = np.delete(array, loc)
@@ -168,8 +188,8 @@ def simple_ecc(array):
 
 def eccentricity(qmatrix):
     """
-    takes a q-matrix computed from the dowker relation
-    :param qmatrix: 
+    takes a q-matrix computed from the dowker relation function
+    :param qmatrix: numpy array
     :return: list of eccentricity values
     """
     try:
@@ -189,14 +209,14 @@ def eccentricity(qmatrix):
         print('Name Error')
         pass
 
-# These are the q-connected components.
-# This is central data type for exploring multi-dimensional persistence of Eq Classes
+
 def compute_classes(edges):
-    # Collect all connected components
-    # Identify equivelence classes
     """
+    Collect all connected components - Identify equivelence classes
+    These are the q-connected components.
+    This is central data type for exploring multi-dimensional persistence of Eq Classes
     Takes a list of tuple edges
-    :param edges: 
+    :param edges: sparse graph 
     :return: list of sets
     """
     try:
@@ -269,7 +289,7 @@ def compute_class_matrix(sparse_graph):
 
 def compute_class_matrix_sparse(sparse_graph):
     """
-    Takes the constructed graph of a matrix of simplicial complexes and computes the sparse repreentation
+    Takes the constructed graph of a matrix of simplicial complexes and computes the sparse representation
     :param class_graph: list of tuples
     :return sparse matrix
     """
@@ -322,7 +342,6 @@ def compute_qgraph(matrix, hyperedges, theta_list):
         for i in theta_list:
             edges = sparse_graph(matrix, hyperedges, i)
             cmp = compute_class_graph(edges)
-            print(cmp)
             qgraph.append((i, cmp))
         print('length of graph: ', len(qgraph))
         return qgraph
@@ -354,30 +373,6 @@ def compute_p_structure(qgraph):
         pstruct.append((j[0], sum(tmp)))
     return pstruct[1:]
 
-
-# The next set of methods are used for computing diagnostic measures.
-# Compute the P-Structure vector of the complex.
-# The P-structure vector is used to measure the number of simplicies for a given q-dimension
-# This method takes a set of Q-Structure vectors that are computed for each q-dimension
-def computeP(qstruct_set):
-    pstruct = {}
-    dim = 0
-    for i in qstruct_set:
-        val = 0
-        for j in i:
-            val = len(j) + val
-        pstruct[dim] = val
-        dim = dim + 1
-    return pstruct
-
-# The Q-Structure vector is used to compute the number of s-homotopy equivalence classes for each q-dimension.
-def computeQ(qstruct_set):
-    qstruct = {}
-    dim = 0
-    for i in qstruct_set:
-        qstruct[dim] = len(i)
-        dim = dim + 1
-    return qstruct
 
 
 # Compute the eccentricity of each simplex in the complex.

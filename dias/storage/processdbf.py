@@ -13,6 +13,7 @@ class processdbf:
         self.output = []
         self.headers = []
 
+
     @jit
     def openfile(self):
         for record in DBF(self.filename, encoding='utf-8'):
@@ -37,6 +38,7 @@ class processdbf:
             cnt =  cnt + 1
         return
 
+
     @jit
     def get_column(self, column_name):
         dex = self.headers.index(column_name)
@@ -44,19 +46,6 @@ class processdbf:
         for i in self.output[1:]:
             col.append(i[dex])
         return column_name, col[1:]
-
-
-    @jit
-    def get_row(self, column_name, id):
-        dex = self.headers.index(column_name)
-        row = ['x']
-        for i in self.output[1:]:
-            if i[dex] == id:
-                row.append(i)
-                break
-            else:
-                pass
-        return column_name, row[1:]
 
 
     @jit
@@ -79,6 +68,35 @@ class processdbf:
             matrix.append(x[1])
         matrix[0] = headers[1:]
         return matrix
+
+
+    @jit
+    def get_row(self, column_name, id):
+        dex = self.headers.index(column_name)
+        row = ['x']
+        for i in self.output[1:]:
+            if i[dex] == id:
+                row.append(i)
+                break
+            else:
+                pass
+        return row[1:]
+
+
+    @jit
+    def add_row(self, data):
+        self.output[1:].append(data)
+        return
+
+
+    @jit
+    def open_csv(self):
+        file = open(self.filename, 'r')
+        rfile = csv.reader(file)
+        for i in rfile:
+            self.output.append(i)
+        self.headers = self.output[0]
+        return
 
 
     @jit
