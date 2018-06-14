@@ -27,6 +27,8 @@ setup(name='dias',
           'lxml',
           'dbfread',
           'googlemaps',
+          'numpy',
+          'scipy',
           'numba'
 
       ],

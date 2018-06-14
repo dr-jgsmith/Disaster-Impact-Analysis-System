@@ -1,6 +1,6 @@
 from numba import jit
 import numpy as np
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix, csgraph
 import networkx as nx
 """
 These functions use the Numba JIT compiler to speed up computational performance on
@@ -74,6 +74,7 @@ def addCoverPattern(cover_array, incidence):
         print('Name Error')
         pass
 
+
 @jit
 def invert_pattern(pattern_vector):
     """
@@ -90,11 +91,42 @@ def invert_pattern(pattern_vector):
     return inverted
 
 
+@jit
+def invert_matrix(matrix):
+    inv_matrix = ['x']
+    for i in matrix:
+        inv = invert_pattern(i)
+        inv_matrix.append(inv)
+    return np.array(inv_matrix[1:])
+
+
+@jit
+def normalize(matrix):
+    norm = ['x']
+    for i in range(len(matrix)):
+        row = []
+        for j in range(len(matrix[i])):
+            val = (matrix[i][j] - min(matrix[:, j])) / (max(matrix[:, j]) - min(matrix[:, j]))
+            row.append(val)
+        norm.append(row)
+    return np.array(norm[1:])
+
+
+@jit
+def compute_incident(value_matrix, theta, slice_type='upper'):
+    if slice_type is 'upper':
+        data = value_matrix >= theta
+    else:
+        data = value_matrix <= theta
+    return data.astype(int)
+
+
 def sparse_graph(incidence, hyperedge_list, theta):
     """
     This function encodes a sparse matrix into a graph representation. 
     This function provides a speed up in computation over the numpy matrix methods
     It can be used on both a shared face matrix or raw data input. 
+    
     :param incidence: numpy incidence matrix 
     :param hyperedge_list: python list | simplicies or nodes
     :param theta: int
@@ -102,7 +134,7 @@ def sparse_graph(incidence, hyperedge_list, theta):
     """
     try:
         sparse = np.nonzero(incidence)
-        edges = [(simplex, vertex, incidence[simplex][vertex]) for simplex, vertex in zip(sparse[0], sparse[1]) if incidence[simplex][vertex] > float(theta)]
+        edges = [(simplex, vertex, incidence[simplex][vertex]) for simplex, vertex in zip(sparse[0], sparse[1]) if incidence[simplex][vertex] >= float(theta)]
         return edges
     except MemoryError:
         print('Memory Error')
@@ -141,7 +173,7 @@ def conjugate_graph(edges):
         pass
 
 
-def dowker_relation(sparse_graph, conjugate_graph):
+def dowker_relation(sparse_graph):
     """
     This provides a fast approach to computing the shared-face relation between simplicies.
     The function takes a sparse graph and its conjugate as inputs. Returns the dwoker relation + 1.
@@ -153,49 +185,10 @@ def dowker_relation(sparse_graph, conjugate_graph):
     """
     try:
         sparseg = compute_class_matrix_sparse(sparse_graph)
-        conjq = compute_class_matrix_sparse(conjugate_graph)
+        conjq = sparseg.transpose()
         q_matrix = sparseg.dot(conjq).toarray()
+        q_matrix = np.subtract(q_matrix, 1)
         return q_matrix
-    except MemoryError:
-        print('Memory Error')
-        pass
-    except RuntimeError:
-        print('Runtime Error')
-        pass
-    except TypeError:
-        print('Type Error')
-        pass
-    except NameError:
-        print('Name Error')
-        pass
-
-
-def simple_ecc(array):
-    """
-    Compute the eccentricity of a simplex. Produced by computing the Dowker relation
-    This takes a 1d array, which is typically the simplex and q-near vertices
-
-    :param array: numpy array
-    :return: numpy array
-    """
-    loc = array.argmax()
-    new = np.delete(array, loc)
-    qhat = max(array)-1
-    qbottom = max(new)-1
-    ecc = (qhat - qbottom) / (qbottom + 1)
-    return ecc
-
-
-def eccentricity(qmatrix):
-    """
-    takes a q-matrix computed from the dowker relation function
-    :param qmatrix: numpy array
-    :return: list of eccentricity values
-    """
-    try:
-        # iterate through the matrix to compute the
-        eccs = [simple_ecc(i) for i in qmatrix]
-        return eccs
     except MemoryError:
         print('Memory Error')
         pass
@@ -263,7 +256,7 @@ def compute_class_graph(comp_list):
 
 def compute_class_matrix(sparse_graph):
     """
-    Takes the constructed graph of a matrix of simplicial complexes and computes the sparse repreentation
+    Takes the constructed graph of a matrix of simplicial complexes and computes the sparse representation
     :param class_graph: list of tuples
     :return: dense matrix
     """
@@ -312,8 +305,14 @@ def compute_class_matrix_sparse(sparse_graph):
         print('Name Error')
         pass
 
+
 @jit
 def compute_paths(sparse_matrix, simplex_index):
+    """
+    :param sparse_matrix: csr_matrix scipy
+    :param simplex_index: vector of simplex labels - integer values representing label index.
+    :return: arrays
+    """
     seen = np.array([simplex_index])
     fronts = [np.array([simplex_index])]
     for i in fronts:
@@ -331,12 +330,24 @@ def compute_paths(sparse_matrix, simplex_index):
     return fronts
 
 
+@jit
 def sum_class_matrix(matrix, axis_val):
+    """
+    :param matrix: 
+    :param axis_val: 
+    :return: 
+    """
     sums = np.sum(matrix, axis=axis_val)
     return sums
 
 
 def compute_qgraph(matrix, hyperedges, theta_list):
+    """
+    :param matrix: 
+    :param hyperedges: 
+    :param theta_list: 
+    :return: 
+    """
     qgraph = []
     try:
         for i in theta_list:
@@ -358,54 +369,268 @@ def compute_qgraph(matrix, hyperedges, theta_list):
         print('Name Error')
         pass
 
+
+@jit
+def simple_qanalysis(value_matrix, slicing_list):
+    """
+    :param value_matrix: 
+    :param slicing_list: 
+    :return: 
+    """
+    comps = ['x']
+    for i in slicing_list:
+        incident = compute_incident(value_matrix, i)
+        graph = sparse_graph(incident, range(len(incident[0])), 1)
+        r = dowker_relation(graph)
+        graph = sparse_graph(r, range(len(incident[0])), 0)
+        classes = compute_classes(graph)
+        comps.append(classes)
+    return comps[1:]
+
+
 @jit
 def compute_q_structure(qgraph):
-    qstruct = [(j[0], len(j[1])) for j in qgraph]
-    return qstruct
+    """
+    :param qgraph: 
+    :return: 
+    """
+    qstruct = ['x']
+    for i in qgraph:
+        qstruct.append(len(i))
+    return qstruct[1:]
+
 
 @jit
 def compute_p_structure(qgraph):
+    """
+    :param qgraph: 
+    :return: 
+    """
     pstruct = ['x']
     for j in qgraph:
         tmp = []
-        for i in j[1]:
-            tmp.append(sum(i))
-        pstruct.append((j[0], sum(tmp)))
+        for i in j:
+            tmp.append(len(i))
+        pstruct.append(sum(tmp))
     return pstruct[1:]
 
 
+@jit
+def simple_ecc(array):
+    """
+    Compute the eccentricity of a simplex. Produced by computing the Dowker relation
+    This takes a 1d array, which is typically the simplex and q-near vertices
 
-# Compute the eccentricity of each simplex in the complex.
-# This measures how integrated a simplex is in the complex.
-# Note: it would be interesting to compute a similar diagnostic for simplex persistence at each q-dim.
-def computeEcc(EqClasses, qstruct, hyperedge_set, vertex_set, conjugate=False):
-    if conjugate is False:
-        hyperedges = hyperedge_set
-    else:
-        hyperedges = vertex_set
+    :param array: numpy array
+    :return: numpy array
+    """
+    loc = array.argmax()
+    new = np.delete(array, loc)
+    qhat = max(array)-1
+    qbottom = max(new)-1
+    ecc = (qhat - qbottom) / (qbottom + 1)
+    return ecc
 
-    # eccI = 2(sum(q_dim/num_simps))/(q_dim*(q_dim+1))
-    eccentricity = {}
-    for simplex in hyperedges:
-        simplex_dim = []
-        dim = 0
-        for i in EqClasses:
-            for j in i:
-                if simplex in j:
-                    val = dim / len(j)
-                    simplex_dim.append(val)
+
+@jit
+def eccentricity(qmatrix):
+    """
+    takes a q-matrix computed from the dowker relation function
+    :param qmatrix: numpy array
+    :return: list of eccentricity values
+    """
+    try:
+        # iterate through the matrix to compute the
+        eccs = [simple_ecc(i) for i in qmatrix]
+        return eccs
+    except MemoryError:
+        print('Memory Error')
+        pass
+    except RuntimeError:
+        print('Runtime Error')
+        pass
+    except TypeError:
+        print('Type Error')
+        pass
+    except NameError:
+        print('Name Error')
+        pass
+
+@jit
+def chin_ecc(comps, hyper_edges):
+    """
+    :param comps: 
+    :param hyper_edges: 
+    :return: 
+    """
+    strct = len(hyper_edges) - 1
+    ecc = ['x']
+    for i in hyper_edges:
+        tmp = []
+        cnt = 0
+        for j in comps:
+            for k in j:
+                if i in k:
+                    e = cnt / len(k)
+                    tmp.append(e)
                 else:
                     pass
-                dim = dim + 1
-        # The ecc algorithm is based on the equation provided by Chin et al. 1991
-        ecc = sum(simplex_dim) / ((1 / 2 * float(max(qstruct))) * float((max(qstruct) + 1)))
-        eccentricity[simplex] = ecc
-    return eccentricity
+            cnt = cnt + 1
+        ecc.append(sum(tmp))
+    qmax = (1/2 * strct) * (strct + 1)
+    ecc = np.divide(ecc[1:], qmax)
+    return ecc
+
+
+@jit
+def compute_psi(value_matrix, weights, slice_list):
+    """
+    :param value_matrix: 
+    :param weights: 
+    :param slice_list: 
+    :return: 
+    """
+    psi = ['x']
+    psimax = ['x']
+    for i in slice_list:
+        incident = compute_incident(value_matrix, i)
+        data = computePattern(weights, incident)
+        repr = np.zeros(len(data))
+        for i in range(len(data)):
+            repr[i] = sum(data[i])
+        psi.append(repr)
+        psimax.append(sum(weights))
+
+    scores = np.array(psi[1:]).sum(axis=0)
+    maxscore = np.array(psimax[1:]).sum(axis=0)
+    psi = np.divide(scores, maxscore)
+    return psi
+
+
+@jit
+def compute_pci(value_matrix, slice_list):
+    """
+    :param value_matrix: 
+    :param slice_list: 
+    :return: 
+    """
+    pci = ['x']
+    pcimax = ['x']
+    for i in slice_list:
+        incident = compute_incident(value_matrix, i)
+        g = sparse_graph(incident, range(len(value_matrix[0])), 1)
+        Q = dowker_relation(g)
+        strct = Q.diagonal()
+        pmax = len(strct) - 1
+        tmp = np.zeros(len(strct))
+        tmax = np.zeros(len(strct))
+        for j in range(len(Q)):
+            # q = max([Q[j][i] for i in range(len(Q[j])) if i is not j])
+            q = []
+            for k in range(len(Q[j])):
+                if k is not j:
+                    q.append(Q[j][k])
+
+            if strct[j] < 0:
+                tmp[j] = 0
+                tmax[j] = pmax
+            else:
+                val = strct[j] - max(q)
+                tmp[j] = val
+                tmax[j] = pmax
+        pci.append(tmp)
+        pcimax.append(tmax)
+    pci = np.array(pci[1:]).sum(axis=0)
+    pcimax = np.array(pcimax[1:]).sum(axis=0)
+    pci = np.divide(pci, pcimax)
+    return pci
+
+
+def compute_pdi(value_matrix, slice_list):
+    """
+    :param value_matrix: 
+    :param slice_list: 
+    :return: 
+    """
+    pdi = ['x']
+    pdimax = ['x']
+    for i in slice_list:
+        incident = compute_incident(value_matrix, i)
+        complement = invert_matrix(incident)
+        g = sparse_graph(complement, range(len(value_matrix[0])), 1)
+        Q = dowker_relation(g)
+        strct = Q.diagonal()
+        pmax = len(strct) - 1
+        tmp = np.zeros(len(strct))
+        tmax = np.zeros(len(strct))
+        for j in range(len(Q)):
+            q = max([Q[j][i] for i in range(len(Q[j])) if i is not j])
+            if strct[j] < 0:
+                tmp[j] = 0
+                tmax[j] = pmax
+            else:
+                val = strct[j] - q
+                tmp[j] = val
+                tmax[j] = pmax
+        pdi.append(tmp)
+        pdimax.append(tmax)
+    pdi = np.array(pdi[1:]).sum(axis=0)
+    pdimax = np.array(pdimax[1:]).sum(axis=0)
+    pdi = np.divide(pdi, pdimax)
+    return pdi
+
+
+def mcqa_ranking_I(psi, pci):
+    """
+    :param psi: 
+    :param pci: 
+    :return: 
+    """
+    pri_psi = np.subtract(1, psi)
+    pri_pci = np.subtract(1, pci)
+    pri = np.add(pri_psi, pri_pci)
+    return pri
+
+
+def mcqa_ranking_II(psi, pci, pdi):
+    '''
+    :param psi: 
+    :param pci: 
+    :param pdi: 
+    :return: 
+    '''
+    pri_psi = np.subtract(1, psi)
+    pri_pci = np.subtract(1, pci)
+    pri_partial = np.add(pri_psi, pri_pci)
+    pri = np.add(pri_partial, pdi)
+    return pri
+
+
+def compute_mcqa(value_matrix, criteria, slicing_list):
+    """
+    :param value_matrix: 
+    :param criteria: 
+    :param slicing_list: 
+    :return: 
+    """
+    norm = normalize(value_matrix)
+    psin = compute_psi(norm, criteria, slicing_list)
+    pcin = compute_pci(norm, slicing_list)
+    pdin = compute_pdi(norm, slicing_list)
+
+    mcq = mcqa_ranking_I(psin, pcin)
+    mcq2 = mcqa_ranking_II(psin, pcin, pdin)
+
+    return mcq, mcq2
 
 
 # Compute system complexity.
 # This is only one of many possible complexity measures and is provided by John Casti.
 def computeComplexity(q_percolation):
+    """
+    :param q_percolation: 
+    :return: 
+    """
     strct = []
     vect = []
     for i in q_percolation.items():

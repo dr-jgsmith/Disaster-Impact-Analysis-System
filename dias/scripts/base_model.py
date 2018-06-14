@@ -13,14 +13,13 @@ def calc_elevation(filename, elevation_file, latfield, lonfield, map_key=None):
     :param map_key: requires a google maps api key
     :param latfield: latitude
     :param lonfield: longitude
-    :param output: filename with .csv extension
     :return: a list of elevations
     """
     try:
         if map_key:
             file = processdbf(filename)
-
             file.openfile()
+
             gmaps = googlemaps.Client(key=map_key)
             elevations = []
 
@@ -67,18 +66,19 @@ def calc_elevation(filename, elevation_file, latfield, lonfield, map_key=None):
                 cnt = cnt + 1
 
             file.add_column('Elevation', elevations)
-
+            return file
         else:
             ele = processdbf(elevation_file)
             ele.open_csv()
-            elevations = ele.get_column("Elevation")
+
+            # elevations = ele.get_column("Elevation")
             parcels = ele.get_column('PARCELATT')
 
             file = processdbf(filename)
             file.openfile()
 
             data = synch_files(file, ele, parcels)
-            data.add_column('Elevation', elevations[1])
+            # data.add_column('Elevation', elevations[1])
             return data
     except MemoryError:
         print('Memory Error')
@@ -96,6 +96,12 @@ def calc_elevation(filename, elevation_file, latfield, lonfield, map_key=None):
 
 @jit
 def synch_files(infile, outfile, column):
+    """
+    :param infile: 
+    :param outfile: 
+    :param column: 
+    :return: 
+    """
     for i in column[1]:
         row = infile.get_row(column[0], i)
         outfile.add_row(row)
@@ -106,7 +112,7 @@ def construct_adjacency(file, latfield, lonfield):
     """
     Construct a representation of system connectivity given elevation and proximity.
 
-    :param filename: .csv file path
+    :param file: object reference
     :param latfield: float latitude
     :param lonfield: float longitude
     :return: numpy incidence matrix 
@@ -120,12 +126,12 @@ def construct_adjacency(file, latfield, lonfield):
         normed = d * 100
         proximity = max(normed[0]) / (max(normed[0]) * 7)
 
-        incident = []
+        incident = ['x']
         for j in normed:
             k = np.piecewise(j, [j <= proximity, j > proximity], [1, 0])
             incident.append(k)
-        incident = np.vstack(incident)
 
+        incident = np.vstack(incident[1:])
         elevations = file.get_column('Elevation')
         felevations = [float(i) for i in elevations[1]]
 
@@ -151,7 +157,6 @@ def elevation_model(input_file, elevation_file, lat, lon, maps_key=None):
     :param input_file: Takes either a .dbf or .csv
     :param lat: latitude value
     :param lon: longitude value
-    :param output_file: .csv
     :param maps_key: string
     :return: tuple with connectivity matrix and vector of elevations 
     """
@@ -250,7 +255,7 @@ def compute_impact_intensity(elevations, layers, bloss_fun, data_object):
     data = ['x']
     means = ['x']
     for i in range(len(layers)):
-        field_name = "Impact_Intensity_" + str(i)
+        field_name = "Intensity_" + str(i)
         # Compute impact
         impact_multiplier = loss_function_Z(elevations, bloss_fun, layers[i], i)
         # Compute and retain means
@@ -261,7 +266,7 @@ def compute_impact_intensity(elevations, layers, bloss_fun, data_object):
 
 
 @jit
-def build_base_model(input_file, elevation_file, lat, lon, max_impact, perc_loss, output_file=None, map_key=None):
+def build_base_model(input_file, elevation_file, lat, lon, max_impact, perc_loss, map_key=None):
     """
     Use this function to build a base model or representation of the system.
     The base model can be saved and used by the simulate_model function.
@@ -271,7 +276,6 @@ def build_base_model(input_file, elevation_file, lat, lon, max_impact, perc_loss
     :param lon: string
     :param max_impact: int
     :param perc_loss: float
-    :param output_file: .csv file path
     :param map_key: Google Maps API Key **optional
     :return: tuple | impact layers, zone vector, elevations, impact matrices, object reference
     """

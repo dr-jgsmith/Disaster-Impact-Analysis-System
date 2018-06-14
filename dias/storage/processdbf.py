@@ -31,6 +31,11 @@ class processdbf:
     # method creates
     @jit
     def add_column(self, column_name, column_data):
+        """
+        :param column_name: 
+        :param column_data: 
+        :return: 
+        """
         self.headers.append(column_name)
         cnt = 0
         for i in self.output[1:]:
@@ -41,6 +46,10 @@ class processdbf:
 
     @jit
     def get_column(self, column_name):
+        """
+        :param column_name: 
+        :return: 
+        """
         dex = self.headers.index(column_name)
         col = ['x']
         for i in self.output[1:]:
@@ -50,6 +59,11 @@ class processdbf:
 
     @jit
     def update_column(self, column_name, new_data):
+        """
+        :param column_name: 
+        :param new_data: 
+        :return: 
+        """
         data = self.get_column(column_name)
         cnt = 0
         for i in data[1]:
@@ -60,6 +74,10 @@ class processdbf:
 
     @jit
     def get_columns(self, column_names):
+        """
+        :param column_names: 
+        :return: 
+        """
         matrix = ['x']
         headers = ['x']
         for i in column_names:
@@ -72,6 +90,11 @@ class processdbf:
 
     @jit
     def get_row(self, column_name, id):
+        """
+        :param column_name: 
+        :param id: 
+        :return: 
+        """
         dex = self.headers.index(column_name)
         row = ['x']
         for i in self.output[1:]:
@@ -85,13 +108,17 @@ class processdbf:
 
     @jit
     def add_row(self, data):
+        """
+        :param data: 
+        :return: 
+        """
         self.output[1:].append(data)
         return
 
 
     @jit
     def open_csv(self):
-        file = open(self.filename, 'r')
+        file = open(self.filename, 'r', encoding='utf-8', errors='ignore')
         rfile = csv.reader(file)
         for i in rfile:
             self.output.append(i)
@@ -101,6 +128,10 @@ class processdbf:
 
     @jit
     def save_csv(self, filename):
+        """
+        :param filename: 
+        :return: 
+        """
         file = open(filename, 'w', newline='')
         outfile = csv.writer(file)
         for i in self.output:

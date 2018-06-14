@@ -53,7 +53,7 @@ def simulate_base_model(model, building_val_field, land_val_field, intensity_ran
             model[4].add_column(bval_title, newb)
             bvalue.append(newb)
 
-            perc_change = "Building_Value_Change_Year_" + str(i)
+            perc_change = "BValue_Change_Year_" + str(i)
             nans = np.isnan(btest)
             btest[nans] = 0
             model[4].add_column(perc_change, btest)
@@ -66,7 +66,7 @@ def simulate_base_model(model, building_val_field, land_val_field, intensity_ran
             model[4].add_column(lval_title, newl)
             lvalue.append(newl)
 
-            perc_change = "Land_Value_Change_Year_" + str(i)
+            perc_change = "LValue_Change_Year_" + str(i)
             nans = np.isnan(ltest)
             ltest[nans] = 0
             model[4].add_column(perc_change, ltest)
@@ -113,8 +113,8 @@ def impact_by_zone(model, parcel_field, impact_zone_field):
                 if int(zones[j]) == i:
                     baverages.append(bdata[i])
                     laverages.append(ldata[i])
-        bfield = "Value_Change_Ratio_B"
-        lfield = "Value_Change_Ratio_L"
+        bfield = "Change_Ratio_B"
+        lfield = "Change_Ratio_L"
         print(len(baverages), len(zones), len(bvalue))
         model[2].add_column(bfield, baverages)
         model[2].add_column(lfield, laverages)
