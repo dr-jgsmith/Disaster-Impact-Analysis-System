@@ -26,10 +26,10 @@ setup(name='dias',
           'networkx',
           'lxml',
           'dbfread',
+          'numba',
           'googlemaps',
           'numpy',
-          'scipy',
-          'numba'
+          'scipy'
 
       ],
       include_package_data=True,
