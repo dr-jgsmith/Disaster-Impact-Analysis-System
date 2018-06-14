@@ -1,0 +1,12 @@
+numpy
+scipy
+pandas
+matplotlib
+seaborn
+dataset
+stuf
+dbfread
+networkx
+lxml
+googlemaps
+numba
