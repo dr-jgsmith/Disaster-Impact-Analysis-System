@@ -28,8 +28,8 @@ setup(name='dias',
           'dbfread',
           'numba',
           'googlemaps',
-          'numpy',
-          'scipy'
+          'scipy',
+          'numpy'
 
       ],
       include_package_data=True,
