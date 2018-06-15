@@ -10,6 +10,8 @@ import seaborn as sns
 Visualization functions for processing graphs, hypergraphs and simplicial 
 complexes. TODOs add options for saving visuals. 
 """
+
+
 def visualize_q_percolation(Q):
     # Takes a python dictionary of variables (keys) and values 
     values = [i[1] for i in Q.items()]
@@ -30,7 +32,8 @@ def visualize_p_percolation(P):
     fig = matplotlib.pyplot.gcf()
     fig.set_size_inches(10, 8)
     plt.show()
-    
+
+
 def visualize_q(Q, simplex_set):
     labels = [i for i in simplex_set]
     values = [i for i in Q]
@@ -42,7 +45,8 @@ def visualize_q(Q, simplex_set):
     fig = matplotlib.pyplot.gcf()
     fig.set_size_inches(10, 8)
     plt.show()
-    
+
+
 def visualize_q_slice(Q, simplex_set, theta=1):
     terms = {}
     count = 0
@@ -99,7 +103,8 @@ def visualize_retained_ecc(ecc):
     fig.set_size_inches(10, 8)
     plt.show()
     return terms
-    
+
+
 def visualize_simple_graph(I, IT):
     am = (np.dot(I.as_matrix(), IT.as_matrix()) > 0).astype(int)
     #np.fill_diagonal(am, 0)
@@ -145,14 +150,16 @@ def visualize_bipart_graph(bigraph):
     fig = matplotlib.pyplot.gcf()
     fig.set_size_inches(10, 8)
     plt.show()
-    
+
+
 def visualize_qmatrix(qmatrix):
     sns.set()
     ax = sns.heatmap(qmatrix)
     fig = matplotlib.pyplot.gcf()
     fig.set_size_inches(10, 8)
     plt.show()
-    
+
+
 def visualize_conjugate(conj):
     sns.set()
     ax = sns.heatmap(conj)

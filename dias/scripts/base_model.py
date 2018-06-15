@@ -155,6 +155,7 @@ def elevation_model(input_file, elevation_file, lat, lon, maps_key=None):
     """
     The elevation model can be used to construct a base layer model for computing
     :param input_file: Takes either a .dbf or .csv
+    :param elevation_file:
     :param lat: latitude value
     :param lon: longitude value
     :param maps_key: string
@@ -290,3 +291,42 @@ def build_base_model(input_file, elevation_file, lat, lon, max_impact, perc_loss
     impact_intensities = compute_impact_intensity(data[1], layers, perc_loss, zones[1])
     # return binarized layers, zone vector, elevations, impact matrices, model object reference
     return layers, zones[0], data[1], impact_intensities, zones[1]
+
+
+def model_growth(data_object, bvalues, lvalues, growth_rate=0.04, time_step=10):
+
+    bvals = [np.array(data_object.get_column(bvalues)[1], dtype='float64')]
+    lvals = [np.array(data_object.get_column(lvalues)[1], dtype='float64')]
+
+    bratio = [np.zeros(len(bvals[0]), dtype='float64')]
+    lratio = [np.zeros(len(lvals[0]), dtype='float64')]
+
+    for i in range(time_step):
+        bv = bvals[i] + (bvals[i] * growth_rate)
+        bvals.append(bv)
+        lv = lvals[i] + (lvals[i] * growth_rate)
+        lvals.append(lv)
+
+        br = np.divide(bv, bvals[0])
+        nans = np.isnan(br)
+        br[nans] = 0
+        bratio.append(br)
+        btitle = 'BGrowth_Year_' + str(i)
+        data_object.add_column(btitle, br)
+
+        lr = np.divide(lv, lvals[0])
+        nans = np.isnan(lr)
+        lr[nans] = 0
+        lratio.append(lr)
+        ltitle = 'LGrowth_Year_' + str(i)
+        data_object.add_column(ltitle, lr)
+
+    return bvals, bratio, lvals, lratio
+
+
+
+
+
+
+
+

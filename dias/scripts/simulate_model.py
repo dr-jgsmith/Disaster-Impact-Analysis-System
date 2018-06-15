@@ -145,16 +145,15 @@ def event_randomizer(min_intensity, max_intensity, multiplier):
 
 def computeLoss(values, pattern, zone_vector, loss_const):
     """
-    :param values: 
-    :param impact_multiplier: 
-    :param zone_vector: 
-    :return: 
+    :param values:
+    :param pattern:
+    :param zone_vector:
+    :param loss_const:
+    :return:
     """
-
     npattern = computePattern(zone_vector, pattern)
     new = loss_const * npattern
     loss = computePattern(values, new)
-    # new_val = values - loss
     return loss
 
 

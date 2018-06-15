@@ -28,7 +28,7 @@ class processdbf:
         self.output.insert(0, self.headers)
         return
 
-    # method creates
+
     @jit
     def add_column(self, column_name, column_data):
         """
@@ -61,13 +61,14 @@ class processdbf:
     def update_column(self, column_name, new_data):
         """
         :param column_name: 
-        :param new_data: 
+        :param new_data:
+
         :return: 
         """
-        data = self.get_column(column_name)
+        data = self.get_column(column_name)[1]
         cnt = 0
-        for i in data[1]:
-            self.output[1:][cnt].append(i)
+        for i in range(len(data)):
+            self.output[1:][cnt][i] = new_data[i]
             cnt = cnt + 1
         return
 
