@@ -82,13 +82,7 @@ def invert_pattern(pattern_vector):
     :param pattern_vector: numpy array | 0's and 1's
     :return: numpy array
     """
-    inverted = np.zeros(len(pattern_vector))
-    for i in range(len(pattern_vector)):
-        if pattern_vector[i] == 0.0:
-            inverted[i] = 1.0
-        else:
-            inverted[i] = 0.0
-    return inverted
+    return 1.0 - pattern_vector
 
 
 @jit
