@@ -114,7 +114,7 @@ def normalize(matrix):
 
 @jit
 def compute_incident(value_matrix, theta, slice_type='upper'):
-    if slice_type is 'upper':
+    if slice_type == 'upper':
         data = value_matrix >= theta
     else:
         data = value_matrix <= theta

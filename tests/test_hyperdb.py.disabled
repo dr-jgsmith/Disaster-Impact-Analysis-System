@@ -1,0 +1,165 @@
+"""
+Tests for the hyperdb module
+"""
+import pytest
+import tempfile
+import os
+from dias.storage.hyperdb import hyperdb
+
+
+class TestHyperDB:
+    """Test cases for hyperdb functionality"""
+    
+    def setup_method(self):
+        """Set up test database for each test"""
+        # Create a temporary database file
+        self.temp_db = tempfile.NamedTemporaryFile(delete=False, suffix='.db')
+        self.temp_db.close()
+        self.db_path = f"sqlite:///{self.temp_db.name}"
+        self.db = hyperdb(db=self.db_path)
+    
+    def teardown_method(self):
+        """Clean up after each test"""
+        # Close database connection and remove temp file
+        if hasattr(self, 'temp_db'):
+            try:
+                os.unlink(self.temp_db.name)
+            except (OSError, FileNotFoundError):
+                pass
+    
+    def test_init_default(self):
+        """Test hyperdb initialization with default database"""
+        db = hyperdb()
+        assert db.db is not None
+    
+    def test_init_custom(self):
+        """Test hyperdb initialization with custom database"""
+        assert self.db.db is not None
+    
+    def test_add_hyperedge(self):
+        """Test adding a hyperedge"""
+        self.db.add_hyperedge('test_title', 'edge1', 'vertex1', 1.0)
+        
+        # Check that the hyperedge was added
+        hyperedges = self.db.get_all_hyperedges()
+        assert len(hyperedges) == 1
+        assert hyperedges[0]['title'] == 'test_title'
+        assert hyperedges[0]['hyperedge'] == 'edge1'
+        assert hyperedges[0]['vertex'] == 'vertex1'
+        assert hyperedges[0]['value'] == 1.0
+    
+    def test_add_multiple_hyperedges(self):
+        """Test adding multiple hyperedges"""
+        self.db.add_hyperedge('title1', 'edge1', 'vertex1', 1.0)
+        self.db.add_hyperedge('title1', 'edge1', 'vertex2', 2.0)
+        self.db.add_hyperedge('title2', 'edge2', 'vertex1', 3.0)
+        
+        hyperedges = self.db.get_all_hyperedges()
+        assert len(hyperedges) == 3
+    
+    def test_add_empty_vertex(self):
+        """Test adding hyperedge with empty vertex (should be skipped)"""
+        self.db.add_hyperedge('test_title', 'edge1', '', 1.0)
+        
+        hyperedges = self.db.get_all_hyperedges()
+        assert len(hyperedges) == 0
+    
+    def test_get_hyperedge_set(self):
+        """Test getting unique hyperedge set"""
+        self.db.add_hyperedge('title1', 'edge1', 'vertex1', 1.0)
+        self.db.add_hyperedge('title1', 'edge1', 'vertex2', 2.0)
+        self.db.add_hyperedge('title2', 'edge2', 'vertex1', 3.0)
+        
+        edge_set = self.db.get_hyperedge_set()
+        assert len(edge_set) == 2
+        assert 'edge1' in edge_set
+        assert 'edge2' in edge_set
+    
+    def test_get_vertex_set(self):
+        """Test getting unique vertex set"""
+        self.db.add_hyperedge('title1', 'edge1', 'vertex1', 1.0)
+        self.db.add_hyperedge('title1', 'edge1', 'vertex2', 2.0)
+        self.db.add_hyperedge('title2', 'edge2', 'vertex1', 3.0)
+        
+        vertex_set = self.db.get_vertex_set()
+        assert len(vertex_set) == 2
+        assert 'vertex1' in vertex_set
+        assert 'vertex2' in vertex_set
+    
+    def test_get_edge_vertices(self):
+        """Test getting vertices for a specific hyperedge"""
+        self.db.add_hyperedge('title1', 'edge1', 'vertex1', 1.0)
+        self.db.add_hyperedge('title1', 'edge1', 'vertex2', 2.0)
+        self.db.add_hyperedge('title2', 'edge2', 'vertex3', 3.0)
+        
+        edge1_vertices = list(self.db.get_edge_vertices('edge1'))
+        assert len(edge1_vertices) == 2
+        
+        vertices = [v['vertex'] for v in edge1_vertices]
+        assert 'vertex1' in vertices
+        assert 'vertex2' in vertices
+    
+    def test_get_matrix(self):
+        """Test matrix construction"""
+        # Add some test data
+        self.db.add_hyperedge('title1', 'edge1', 'vertex1', 1.0)
+        self.db.add_hyperedge('title1', 'edge1', 'vertex2', 2.0)
+        self.db.add_hyperedge('title2', 'edge2', 'vertex1', 3.0)
+        self.db.add_hyperedge('title2', 'edge2', 'vertex3', 4.0)
+        
+        matrix = self.db.get_matrix()
+        
+        # Should have 2 rows (hyperedges) and 3 columns (vertices)
+        assert len(matrix) == 2
+        assert len(matrix[0]) == 3
+        assert len(matrix[1]) == 3
+        
+        # Check that values are correctly placed
+        vertex_set = self.db.get_vertex_set()
+        edge_set = self.db.get_hyperedge_set()
+        
+        # Find indices
+        v1_idx = vertex_set.index('vertex1')
+        v2_idx = vertex_set.index('vertex2')
+        v3_idx = vertex_set.index('vertex3')
+        e1_idx = edge_set.index('edge1')
+        e2_idx = edge_set.index('edge2')
+        
+        # Check values
+        assert matrix[e1_idx][v1_idx] == 1.0
+        assert matrix[e1_idx][v2_idx] == 2.0
+        assert matrix[e1_idx][v3_idx] == 0  # Not connected
+        assert matrix[e2_idx][v1_idx] == 3.0
+        assert matrix[e2_idx][v2_idx] == 0  # Not connected
+        assert matrix[e2_idx][v3_idx] == 4.0
+
+
+class TestHyperDBEdgeCases:
+    """Test edge cases and error conditions"""
+    
+    def test_duplicate_edges_and_vertices(self):
+        """Test that duplicate edges and vertices are handled correctly"""
+        temp_db = tempfile.NamedTemporaryFile(delete=False, suffix='.db')
+        temp_db.close()
+        db_path = f"sqlite:///{temp_db.name}"
+        db = hyperdb(db=db_path)
+        
+        try:
+            # Add the same hyperedge multiple times
+            db.add_hyperedge('title1', 'edge1', 'vertex1', 1.0)
+            db.add_hyperedge('title2', 'edge1', 'vertex2', 2.0)  # Same edge, different vertex
+            
+            # Should still have only one unique edge in the edge set
+            edge_set = db.get_hyperedge_set()
+            assert len(edge_set) == 1
+            assert edge_set[0] == 'edge1'
+            
+            # But should have all hyperedge entries
+            all_edges = db.get_all_hyperedges()
+            assert len(all_edges) == 2
+            
+        finally:
+            try:
+                os.unlink(temp_db.name)
+            except (OSError, FileNotFoundError):
+                pass

@@ -25,7 +25,7 @@ class hyperdb:
         # https://dataset.readthedocs.io/en/latest/
         
         # Establish connection
-        if db is 'default':
+        if db == 'default':
             self.db = dataset.connect("sqlite:///hypergraph.db", row_type=stuf)
         else:
             self.db = dataset.connect(db, row_type=stuf)
