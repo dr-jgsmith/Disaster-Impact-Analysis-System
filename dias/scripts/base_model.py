@@ -212,16 +212,7 @@ def binarize_zones(zones):
     :param zones: list of layers | list of numpy arrays
     :return: list of binary numpy arrays 
     """
-    layers = ['x']
-    for i in range(len(zones)):
-        zone_vector = np.zeros(len(zones[i]))
-        for j in range(len(zone_vector)):
-            if zones[i][j] > 0.0:
-                zone_vector[j] = 1.0
-            else:
-                pass
-        layers.append(zone_vector)
-    return layers[1:]
+    return [(zone > 0.0).astype(float) for zone in zones]
 
 
 @jit
