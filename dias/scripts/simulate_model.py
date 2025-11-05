@@ -133,14 +133,8 @@ def event_randomizer(min_intensity, max_intensity, multiplier):
     :param multiplier: 
     :return: 
     """
-    pool = []
-    for i in range(max_intensity):
-        v = len(range(int(max_intensity))) - (i * multiplier)
-        row = [i] * int(v)
-        pool.extend(row)
-    maxm = len(pool) - 1
-    num = random.randint(min_intensity, maxm)
-    return pool[num]
+    weights = [max(0, max_intensity - (i * multiplier)) for i in range(max_intensity)]
+    return random.choices(range(max_intensity), weights=weights)[0]
 
 
 def computeLoss(values, pattern, zone_vector, loss_const):
