@@ -519,11 +519,7 @@ def compute_pci(value_matrix, slice_list):
         tmp = np.zeros(len(strct))
         tmax = np.zeros(len(strct))
         for j in range(len(Q)):
-            # q = max([Q[j][i] for i in range(len(Q[j])) if i is not j])
-            q = []
-            for k in range(len(Q[j])):
-                if k is not j:
-                    q.append(Q[j][k])
+            q = [Q[j][k] for k in range(len(Q[j])) if k != j]
 
             if strct[j] < 0:
                 tmp[j] = 0
@@ -558,7 +554,7 @@ def compute_pdi(value_matrix, slice_list):
         tmp = np.zeros(len(strct))
         tmax = np.zeros(len(strct))
         for j in range(len(Q)):
-            q = max([Q[j][i] for i in range(len(Q[j])) if i is not j])
+            q = max([Q[j][i] for i in range(len(Q[j])) if i != j])
             if strct[j] < 0:
                 tmp[j] = 0
                 tmax[j] = pmax
