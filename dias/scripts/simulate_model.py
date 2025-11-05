@@ -89,30 +89,27 @@ def impact_by_zone(model, parcel_field, impact_zone_field):
     """
     try:
         zones = model[2].get_column(impact_zone_field)[1]
+        zones_array = np.array(zones)
         bvalue = np.array(model[0]).mean(axis=0)
         lvalue = np.array(model[1]).mean(axis=0)
         bdata = []
         ldata = []
         for i in range(int(max(zones) + 1)):
-            btmp = []
-            ltmp = []
             print("Getting zones ", str(i))
-            for j in range(len(zones)):
-                if int(zones[j]) == i:
-                    btmp.append(bvalue[j])
-                    ltmp.append(lvalue[j])
-                else:
-                    pass
-            bdata.append(np.median(btmp))
-            ldata.append(np.median(ltmp))
+            mask = zones_array == i
+            if mask.any():
+                bdata.append(np.median(bvalue[mask]))
+                ldata.append(np.median(lvalue[mask]))
+            else:
+                bdata.append(0)
+                ldata.append(0)
 
         baverages = []
         laverages = []
         for i in range(len(bdata) + 1):
-            for j in range(len(zones)):
-                if int(zones[j]) == i:
-                    baverages.append(bdata[i])
-                    laverages.append(ldata[i])
+            mask = zones_array == i
+            baverages.extend([bdata[i]] * mask.sum())
+            laverages.extend([ldata[i]] * mask.sum())
         bfield = "Change_Ratio_B"
         lfield = "Change_Ratio_L"
         print(len(baverages), len(zones), len(bvalue))
