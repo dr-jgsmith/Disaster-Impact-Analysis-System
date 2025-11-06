@@ -126,12 +126,9 @@ def construct_adjacency(file, latfield, lonfield):
         normed = d * 100
         proximity = max(normed[0]) / (max(normed[0]) * 7)
 
-        incident = ['x']
-        for j in normed:
-            k = np.piecewise(j, [j <= proximity, j > proximity], [1, 0])
-            incident.append(k)
-
-        incident = np.vstack(incident[1:])
+        incident = np.zeros_like(normed)
+        for i, j in enumerate(normed):
+            incident[i] = np.where(j <= proximity, 1, 0)
         elevations = file.get_column('Elevation')
         felevations = [float(i) for i in elevations[1]]
 
