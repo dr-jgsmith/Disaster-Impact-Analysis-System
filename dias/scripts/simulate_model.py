@@ -128,13 +128,25 @@ def impact_by_zone(model, parcel_field, impact_zone_field):
 
 def event_randomizer(min_intensity, max_intensity, multiplier):
     """
-    :param min_intensity: 
-    :param max_intensity: 
-    :param multiplier: 
-    :return: 
+    Generate random flood event intensity using weighted selection.
+    
+    :param min_intensity: Minimum elevation threshold (inclusive) - lowest elevation where events occur
+    :param max_intensity: Maximum elevation threshold (exclusive) - upper bound for event range
+    :param multiplier: Weight multiplier for decreasing probability at higher intensities
+    :return: Random intensity value in range [min_intensity, max_intensity)
     """
-    weights = [max(0, max_intensity - (i * multiplier)) for i in range(max_intensity)]
-    return random.choices(range(max_intensity), weights=weights)[0]
+    min_i = int(min_intensity)
+    max_i = int(max_intensity)
+    
+    weights = [
+        (max_i - (i * multiplier)) if i >= min_i else 0.0
+        for i in range(max_i)
+    ]
+    
+    if not any(w > 0 for w in weights):
+        return min_i
+    
+    return random.choices(range(max_i), weights=weights)[0]
 
 
 def computeLoss(values, pattern, zone_vector, loss_const):
