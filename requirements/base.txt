@@ -1,0 +1,25 @@
+# Core ML/Scientific Computing
+jax==0.4.20
+jaxlib==0.4.20
+numpy>=1.24.0,<2.0.0
+scipy>=1.11.0
+
+# Data Processing
+pandas>=2.0.0
+dbfread>=2.0.7
+
+# Web Framework
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+
+# File Upload/Multipart
+python-multipart>=0.0.6
+
+# External APIs
+googlemaps>=4.10.0
+
+# Utilities
+python-dotenv>=1.0.0
+
