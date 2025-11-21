@@ -4,6 +4,9 @@ __pycache__/
 *$py.class
 *.so
 .Python
+venv/
+ENV/
+env/
 build/
 develop-eggs/
 dist/
@@ -21,41 +24,42 @@ wheels/
 *.egg
 MANIFEST
 
-# Virtual environments
-venv/
-env/
-ENV/
-env.bak/
-venv.bak/
+# Docker
+.dockerignore
 
-# PyCharm
-.idea/
-
-# VSCode
+# IDE
 .vscode/
+.idea/
+*.swp
+*.swo
+*~
 
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# pyenv
-.python-version
-
-# Environment variables
-.env
-.envrc
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.hypothesis/
 
 # Data files
-*.csv
 *.dbf
-*.shp
-*.shx
-*.prj
+*.csv
+elevations.csv
+output/
+data/local/
 
-# OS generated files
+# Environment
+.env
+.env.local
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# OS
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
+
+# Logs
+*.log
+logs/
