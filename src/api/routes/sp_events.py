@@ -25,7 +25,7 @@ from src.api.models import (
     ErrorResponse,
 )
 from src.api.storage import EventStorage
-from src.core.sp_events.flood import FloodEvent
+from src.core.sp_events.flood_event import FloodEvent
 from src.core.visualization.geojson import (
     sp_event_to_geojson,
     sp_event_to_geojson_with_impacts,
