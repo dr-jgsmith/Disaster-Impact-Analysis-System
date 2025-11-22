@@ -305,7 +305,7 @@
         // Global state
         let map;
         let testData = null;
-        let phenomenonId = null;
+        let eventId = null;
         let currentGeoJSON = null;
         let currentScenario = 0;
         let geoJSONLayer = null;
@@ -359,7 +359,7 @@
             }
 
             return {
-                phenomenon_type: 'flood',
+                event_type: 'flood',
                 data: {
                     entity_ids: entityIds,
                     coordinates: coordinates,
@@ -383,12 +383,12 @@
             document.getElementById('createBtn').disabled = false;
         }
 
-        // Step 2: Create phenomenon via API
+        // Step 2: Create sp_event via API
         async function createPhenomenon() {
             try {
-                showStatus('createStatus', 'info', 'Creating flood phenomenon...');
+                showStatus('createStatus', 'info', 'Creating flood sp_event...');
                 
-                const response = await fetch(`${API_URL}/api/v1/phenomena`, {
+                const response = await fetch(`${API_URL}/api/v1/sp_events`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(testData)
@@ -399,9 +399,9 @@
                 }
 
                 const result = await response.json();
-                phenomenonId = result.id;
+                eventId = result.id;
                 
-                showStatus('createStatus', 'success', `Created phenomenon: ${phenomenonId}`);
+                showStatus('createStatus', 'success', `Created sp_event: ${eventId}`);
                 document.getElementById('computeZonesBtn').disabled = false;
             } catch (error) {
                 showStatus('createStatus', 'error', `Error: ${error.message}`);
@@ -417,7 +417,7 @@
                 
                 showStatus('zonesStatus', 'info', 'Computing flood zones...');
 
-                const response = await fetch(`${API_URL}/api/v1/phenomena/${phenomenonId}/zones`, {
+                const response = await fetch(`${API_URL}/api/v1/sp_events/${eventId}/zones`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
@@ -458,7 +458,7 @@
                 
                 showStatus('impactStatus', 'info', 'Computing property loss...');
 
-                const response = await fetch(`${API_URL}/api/v1/phenomena/${phenomenonId}/impact`, {
+                const response = await fetch(`${API_URL}/api/v1/sp_events/${eventId}/impact`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
@@ -495,7 +495,7 @@
         async function visualizeGeoJSON() {
             try {
                 const response = await fetch(
-                    `${API_URL}/api/v1/phenomena/${phenomenonId}/geojson?scenario=${currentScenario}`
+                    `${API_URL}/api/v1/sp_events/${eventId}/geojson?scenario=${currentScenario}`
                 );
 
                 if (!response.ok) {

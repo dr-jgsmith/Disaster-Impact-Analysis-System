@@ -193,10 +193,10 @@ curl http://localhost:8000/info
 #### 3. Create Flood Phenomenon
 
 ```bash
-curl -X POST http://localhost:8000/api/v1/phenomena \
+curl -X POST http://localhost:8000/api/v1/events \
   -H "Content-Type: application/json" \
   -d '{
-    "phenomenon_type": "flood",
+    "event_type": "flood",
     "data": {
       "entity_ids": ["P001", "P002", "P003"],
       "coordinates": [[29.76, -95.37], [29.77, -95.38], [29.78, -95.39]],
@@ -217,7 +217,7 @@ curl -X POST http://localhost:8000/api/v1/phenomena \
 ```bash
 PHENOM_ID="flood_abc12345"  # Use ID from step 3
 
-curl -X POST http://localhost:8000/api/v1/phenomena/$PHENOM_ID/zones \
+curl -X POST http://localhost:8000/api/v1/events/$PHENOM_ID/zones \
   -H "Content-Type: application/json" \
   -d '{
     "scenario_params": {
@@ -230,7 +230,7 @@ curl -X POST http://localhost:8000/api/v1/phenomena/$PHENOM_ID/zones \
 #### 5. Get GeoJSON
 
 ```bash
-curl http://localhost:8000/api/v1/phenomena/$PHENOM_ID/geojson
+curl http://localhost:8000/api/v1/events/$PHENOM_ID/geojson
 ```
 
 ### Integration Tests
@@ -600,9 +600,9 @@ docker exec -it dias-api /bin/bash
 - Health: `GET /health`
 - Info: `GET /info`
 - Docs: `GET /docs`
-- Create phenomenon: `POST /api/v1/phenomena`
-- List phenomena: `GET /api/v1/phenomena`
-- GeoJSON: `GET /api/v1/phenomena/{id}/geojson`
+- Create event: `POST /api/v1/events`
+- List events: `GET /api/v1/events`
+- GeoJSON: `GET /api/v1/events/{id}/geojson`
 
 ---
 

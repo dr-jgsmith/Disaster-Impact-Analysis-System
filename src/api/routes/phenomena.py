@@ -1,5 +1,5 @@
 """
-Phenomenon management, computation, and visualization endpoints.
+Event management, computation, and visualization endpoints.
 """
 
 import time
@@ -9,26 +9,26 @@ from fastapi import APIRouter, HTTPException, Query, Depends, Response
 from fastapi.responses import JSONResponse
 
 from src.api.models import (
-    CreatePhenomenonRequest,
-    CreatePhenomenonResponse,
+    CreateEventRequest,
+    CreateEventResponse,
     ComputeZonesRequest,
     ComputeZonesResponse,
     ComputeImpactRequest,
     ComputeImpactResponse,
-    PhenomenonInfo,
-    PhenomenonSummary,
+    EventInfo,
+    EventSummary,
     ZoneBounds,
     ZoneStatistics,
-    PhenomenonList,
-    PhenomenonLinks,
-    PhenomenonStatus,
+    EventList,
+    EventLinks,
+    EventStatus,
     ErrorResponse,
 )
-from src.api.storage import PhenomenonStorage
-from src.core.phenomena.flood import FloodPhenomenon
+from src.api.storage import EventStorage
+from src.core.sp_events.flood import FloodEvent
 from src.core.visualization.geojson import (
-    phenomenon_to_geojson,
-    phenomenon_to_geojson_with_impacts,
+    sp_event_to_geojson,
+    sp_event_to_geojson_with_impacts,
     get_zone_bounds,
     get_zone_statistics,
 )
@@ -38,70 +38,70 @@ router = APIRouter()
 
 
 # Dependency to get storage
-def get_storage() -> PhenomenonStorage:
-    """Get phenomenon storage (will be injected from main app)."""
+def get_storage() -> EventStorage:
+    """Get sp_event storage (will be injected from main app)."""
     from src.api.main import get_storage as _get_storage
     return _get_storage()
 
 
-def get_phenomenon_or_404(phenomenon_id: str, storage: PhenomenonStorage):
-    """Get phenomenon or raise 404."""
-    phenom_data = storage.get(phenomenon_id)
+def get_sp_event_or_404(event_id: str, storage: EventStorage):
+    """Get sp_event or raise 404."""
+    phenom_data = storage.get(event_id)
     if not phenom_data:
         raise HTTPException(
             status_code=404,
             detail={
                 "code": "PHENOMENON_NOT_FOUND",
-                "message": f"Phenomenon with ID '{phenomenon_id}' not found",
-                "details": {"phenomenon_id": phenomenon_id},
+                "message": f"Event with ID '{event_id}' not found",
+                "details": {"event_id": event_id},
             }
         )
     return phenom_data
 
 
-def build_phenomenon_links(phenomenon_id: str) -> PhenomenonLinks:
-    """Build HATEOAS links for phenomenon."""
-    return PhenomenonLinks(
-        self=f"/api/v1/phenomena/{phenomenon_id}",
-        compute_zones=f"/api/v1/phenomena/{phenomenon_id}/zones",
-        compute_impact=f"/api/v1/phenomena/{phenomenon_id}/impact",
-        geojson=f"/api/v1/phenomena/{phenomenon_id}/geojson",
-        summary=f"/api/v1/phenomena/{phenomenon_id}/summary",
+def build_sp_event_links(event_id: str) -> EventLinks:
+    """Build HATEOAS links for sp_event."""
+    return EventLinks(
+        self=f"/api/v1/sp_events/{event_id}",
+        compute_zones=f"/api/v1/sp_events/{event_id}/zones",
+        compute_impact=f"/api/v1/sp_events/{event_id}/impact",
+        geojson=f"/api/v1/sp_events/{event_id}/geojson",
+        summary=f"/api/v1/sp_events/{event_id}/summary",
     )
 
 
 # ============================================================================
-# Phenomenon CRUD Endpoints
+# Event CRUD Endpoints
 # ============================================================================
 
 
 @router.post(
-    "/phenomena",
-    response_model=CreatePhenomenonResponse,
+    "/sp_events",
+    response_model=CreateEventResponse,
     status_code=201,
-    summary="Create a new spatial phenomenon",
-    description="Create a new spatial phenomenon from data (flood, contagion, supply-chain, etc.)"
+    summary="Create a new spatial sp_event",
+    description="Create a new spatial sp_event from data (flood, contagion, supply-chain, etc.)"
 )
-async def create_phenomenon(
-    request: CreatePhenomenonRequest,
-    storage: PhenomenonStorage = Depends(get_storage),
+async def create_sp_event(
+    request: CreateEventRequest,
+    storage: EventStorage = Depends(get_storage),
 ):
-    """Create a new spatial phenomenon."""
+    """Create a new spatial sp_event."""
     try:
         # Extract data
         data = request.data
         options = request.options or {}
         
-        # Create phenomenon based on type
-        if request.phenomenon_type == "flood":
+        # Create sp_event based on type
+        if request.event_type == "flood":
             # Convert lists to numpy arrays
             entity_ids = data["entity_ids"]
             coordinates = np.array(data["coordinates"])
             adjacency_matrix = np.array(data["adjacency_matrix"])
             attributes = data["attributes"]
             
-            # Create FloodPhenomenon
-            phenomenon = FloodPhenomenon(
+            # Create FloodEvent
+            sp_event = FloodEvent(
                 parcel_ids=entity_ids,
                 coordinates=coordinates,
                 adjacency_matrix=adjacency_matrix,
@@ -114,25 +114,25 @@ async def create_phenomenon(
                 status_code=422,
                 detail={
                     "code": "UNSUPPORTED_PHENOMENON_TYPE",
-                    "message": f"Phenomenon type '{request.phenomenon_type}' is not yet supported",
+                    "message": f"Event type '{request.event_type}' is not yet supported",
                     "details": {
-                        "phenomenon_type": request.phenomenon_type,
+                        "event_type": request.event_type,
                         "supported_types": ["flood"],
                     },
                 }
             )
         
-        # Store phenomenon
-        phenomenon_id = storage.create(phenomenon, request.phenomenon_type.value)
+        # Store sp_event
+        event_id = storage.create(sp_event, request.event_type.value)
         
         # Return response
-        return CreatePhenomenonResponse(
-            id=phenomenon_id,
-            phenomenon_type=request.phenomenon_type,
-            n_entities=len(phenomenon.entity_ids),
-            created_at=storage.get(phenomenon_id)["created_at"],
-            status=PhenomenonStatus.READY,
-            links=build_phenomenon_links(phenomenon_id),
+        return CreateEventResponse(
+            id=event_id,
+            event_type=request.event_type,
+            n_entities=len(sp_event.entity_ids),
+            created_at=storage.get(event_id)["created_at"],
+            status=EventStatus.READY,
+            links=build_sp_event_links(event_id),
         )
     
     except HTTPException:
@@ -142,56 +142,56 @@ async def create_phenomenon(
             status_code=500,
             detail={
                 "code": "CREATION_FAILED",
-                "message": f"Failed to create phenomenon: {str(e)}",
+                "message": f"Failed to create sp_event: {str(e)}",
                 "details": {"error": str(e)},
             }
         )
 
 
 @router.get(
-    "/phenomena/{phenomenon_id}",
-    response_model=PhenomenonInfo,
-    summary="Get phenomenon information",
-    description="Retrieve detailed information about a specific phenomenon"
+    "/sp_events/{event_id}",
+    response_model=EventInfo,
+    summary="Get sp_event information",
+    description="Retrieve detailed information about a specific sp_event"
 )
-async def get_phenomenon(
-    phenomenon_id: str,
-    storage: PhenomenonStorage = Depends(get_storage),
+async def get_sp_event(
+    event_id: str,
+    storage: EventStorage = Depends(get_storage),
 ):
-    """Get phenomenon information."""
-    phenom_data = get_phenomenon_or_404(phenomenon_id, storage)
-    phenomenon = phenom_data["phenomenon"]
+    """Get sp_event information."""
+    phenom_data = get_sp_event_or_404(event_id, storage)
+    sp_event = phenom_data["sp_event"]
     
-    return PhenomenonInfo(
-        id=phenomenon_id,
-        phenomenon_type=phenom_data["phenomenon_type"],
-        n_entities=len(phenomenon.entity_ids),
+    return EventInfo(
+        id=event_id,
+        event_type=phenom_data["event_type"],
+        n_entities=len(sp_event.entity_ids),
         created_at=phenom_data["created_at"],
         status=phenom_data["status"],
-        has_zones=phenomenon.zones is not None,
-        has_impacts=phenomenon.impact_metrics is not None,
-        n_scenarios=len(phenomenon.zones) if phenomenon.zones else None,
-        links=build_phenomenon_links(phenomenon_id),
+        has_zones=sp_event.zones is not None,
+        has_impacts=sp_event.impact_metrics is not None,
+        n_scenarios=len(sp_event.zones) if sp_event.zones else None,
+        links=build_sp_event_links(event_id),
     )
 
 
 @router.delete(
-    "/phenomena/{phenomenon_id}",
+    "/sp_events/{event_id}",
     status_code=204,
-    summary="Delete a phenomenon",
-    description="Remove a phenomenon from storage"
+    summary="Delete a sp_event",
+    description="Remove a sp_event from storage"
 )
-async def delete_phenomenon(
-    phenomenon_id: str,
-    storage: PhenomenonStorage = Depends(get_storage),
+async def delete_sp_event(
+    event_id: str,
+    storage: EventStorage = Depends(get_storage),
 ):
-    """Delete a phenomenon."""
-    if not storage.delete(phenomenon_id):
+    """Delete a sp_event."""
+    if not storage.delete(event_id):
         raise HTTPException(
             status_code=404,
             detail={
                 "code": "PHENOMENON_NOT_FOUND",
-                "message": f"Phenomenon with ID '{phenomenon_id}' not found",
+                "message": f"Event with ID '{event_id}' not found",
             }
         )
     
@@ -199,41 +199,41 @@ async def delete_phenomenon(
 
 
 @router.get(
-    "/phenomena",
-    response_model=PhenomenonList,
-    summary="List all phenomena",
-    description="Get paginated list of all phenomena"
+    "/sp_events",
+    response_model=EventList,
+    summary="List all sp_events",
+    description="Get paginated list of all sp_events"
 )
-async def list_phenomena(
+async def list_sp_events(
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(10, ge=1, le=100, description="Items per page"),
-    storage: PhenomenonStorage = Depends(get_storage),
+    storage: EventStorage = Depends(get_storage),
 ):
-    """List all phenomena with pagination."""
+    """List all sp_events with pagination."""
     skip = (page - 1) * page_size
-    phenomena_data = storage.list_all(skip=skip, limit=page_size)
+    sp_events_data = storage.list_all(skip=skip, limit=page_size)
     total = storage.count()
     total_pages = (total + page_size - 1) // page_size
     
-    phenomena_list = []
-    for item in phenomena_data:
-        phenomenon = item["phenomenon"]
-        phenomena_list.append(
-            PhenomenonInfo(
+    sp_events_list = []
+    for item in sp_events_data:
+        sp_event = item["sp_event"]
+        sp_events_list.append(
+            EventInfo(
                 id=item["id"],
-                phenomenon_type=item["phenomenon_type"],
-                n_entities=len(phenomenon.entity_ids),
+                event_type=item["event_type"],
+                n_entities=len(sp_event.entity_ids),
                 created_at=item["created_at"],
                 status=item["status"],
-                has_zones=phenomenon.zones is not None,
-                has_impacts=phenomenon.impact_metrics is not None,
-                n_scenarios=len(phenomenon.zones) if phenomenon.zones else None,
-                links=build_phenomenon_links(item["id"]),
+                has_zones=sp_event.zones is not None,
+                has_impacts=sp_event.impact_metrics is not None,
+                n_scenarios=len(sp_event.zones) if sp_event.zones else None,
+                links=build_sp_event_links(item["id"]),
             )
         )
     
-    return PhenomenonList(
-        phenomena=phenomena_list,
+    return EventList(
+        sp_events=sp_events_list,
         total=total,
         page=page,
         page_size=page_size,
@@ -247,49 +247,49 @@ async def list_phenomena(
 
 
 @router.post(
-    "/phenomena/{phenomenon_id}/zones",
+    "/sp_events/{event_id}/zones",
     response_model=ComputeZonesResponse,
     summary="Compute zones/scenarios",
     description="Compute impact zones for different scenarios"
 )
 async def compute_zones(
-    phenomenon_id: str,
+    event_id: str,
     request: ComputeZonesRequest,
-    storage: PhenomenonStorage = Depends(get_storage),
+    storage: EventStorage = Depends(get_storage),
 ):
-    """Compute zones/scenarios for phenomenon."""
-    phenom_data = get_phenomenon_or_404(phenomenon_id, storage)
-    phenomenon = phenom_data["phenomenon"]
+    """Compute zones/scenarios for sp_event."""
+    phenom_data = get_sp_event_or_404(event_id, storage)
+    sp_event = phenom_data["sp_event"]
     
     try:
         # Update status
-        storage.update_status(phenomenon_id, "computing_zones")
+        storage.update_status(event_id, "computing_zones")
         
         # Measure computation time
         start_time = time.time()
         
         # Compute zones
-        zones = phenomenon.compute_zones(request.scenario_params)
+        zones = sp_event.compute_zones(request.scenario_params)
         
         computation_time_ms = (time.time() - start_time) * 1000
         
         # Update status
-        storage.update_status(phenomenon_id, "zones_computed")
+        storage.update_status(event_id, "zones_computed")
         
         return ComputeZonesResponse(
-            phenomenon_id=phenomenon_id,
+            event_id=event_id,
             n_scenarios=len(zones),
             scenarios_computed=True,
             computation_time_ms=computation_time_ms,
             links={
-                "geojson": f"/api/v1/phenomena/{phenomenon_id}/geojson",
-                "compute_impact": f"/api/v1/phenomena/{phenomenon_id}/impact",
-                "summary": f"/api/v1/phenomena/{phenomenon_id}/summary",
+                "geojson": f"/api/v1/sp_events/{event_id}/geojson",
+                "compute_impact": f"/api/v1/sp_events/{event_id}/impact",
+                "summary": f"/api/v1/sp_events/{event_id}/summary",
             },
         )
     
     except Exception as e:
-        storage.update_status(phenomenon_id, "error")
+        storage.update_status(event_id, "error")
         raise HTTPException(
             status_code=500,
             detail={
@@ -301,64 +301,64 @@ async def compute_zones(
 
 
 @router.post(
-    "/phenomena/{phenomenon_id}/impact",
+    "/sp_events/{event_id}/impact",
     response_model=ComputeImpactResponse,
     summary="Compute impact metrics",
     description="Calculate impact metrics for computed zones"
 )
 async def compute_impact(
-    phenomenon_id: str,
+    event_id: str,
     request: ComputeImpactRequest,
-    storage: PhenomenonStorage = Depends(get_storage),
+    storage: EventStorage = Depends(get_storage),
 ):
-    """Compute impact metrics for phenomenon."""
-    phenom_data = get_phenomenon_or_404(phenomenon_id, storage)
-    phenomenon = phenom_data["phenomenon"]
+    """Compute impact metrics for sp_event."""
+    phenom_data = get_sp_event_or_404(event_id, storage)
+    sp_event = phenom_data["sp_event"]
     
     # Check if zones have been computed
-    if phenomenon.zones is None:
+    if sp_event.zones is None:
         raise HTTPException(
             status_code=409,
             detail={
                 "code": "ZONES_NOT_COMPUTED",
                 "message": "Zones must be computed before calculating impact",
                 "details": {
-                    "phenomenon_id": phenomenon_id,
-                    "compute_zones_url": f"/api/v1/phenomena/{phenomenon_id}/zones",
+                    "event_id": event_id,
+                    "compute_zones_url": f"/api/v1/sp_events/{event_id}/zones",
                 },
             }
         )
     
     try:
         # Update status
-        storage.update_status(phenomenon_id, "computing_impact")
+        storage.update_status(event_id, "computing_impact")
         
         # Measure computation time
         start_time = time.time()
         
         # Compute impact
-        impact_metrics = phenomenon.compute_impact(
-            phenomenon.zones,
+        impact_metrics = sp_event.compute_impact(
+            sp_event.zones,
             request.scenario_params
         )
         
         computation_time_ms = (time.time() - start_time) * 1000
         
         # Update status
-        storage.update_status(phenomenon_id, "complete")
+        storage.update_status(event_id, "complete")
         
         return ComputeImpactResponse(
-            phenomenon_id=phenomenon_id,
+            event_id=event_id,
             impact_metrics=impact_metrics,
             computation_time_ms=computation_time_ms,
             links={
-                "geojson": f"/api/v1/phenomena/{phenomenon_id}/geojson",
-                "summary": f"/api/v1/phenomena/{phenomenon_id}/summary",
+                "geojson": f"/api/v1/sp_events/{event_id}/geojson",
+                "summary": f"/api/v1/sp_events/{event_id}/summary",
             },
         )
     
     except Exception as e:
-        storage.update_status(phenomenon_id, "error")
+        storage.update_status(event_id, "error")
         raise HTTPException(
             status_code=500,
             detail={
@@ -375,38 +375,38 @@ async def compute_impact(
 
 
 @router.get(
-    "/phenomena/{phenomenon_id}/geojson",
+    "/sp_events/{event_id}/geojson",
     summary="Get GeoJSON representation",
-    description="Get phenomenon data in GeoJSON format for visualization"
+    description="Get sp_event data in GeoJSON format for visualization"
 )
 async def get_geojson(
-    phenomenon_id: str,
+    event_id: str,
     scenario: Optional[int] = Query(None, description="Specific scenario index"),
     include_zones: bool = Query(True, description="Include zone data"),
     include_impacts: bool = Query(True, description="Include impact data"),
-    include_attributes: bool = Query(True, description="Include phenomenon attributes"),
-    storage: PhenomenonStorage = Depends(get_storage),
+    include_attributes: bool = Query(True, description="Include sp_event attributes"),
+    storage: EventStorage = Depends(get_storage),
 ):
-    """Get phenomenon as GeoJSON FeatureCollection."""
-    phenom_data = get_phenomenon_or_404(phenomenon_id, storage)
-    phenomenon = phenom_data["phenomenon"]
+    """Get sp_event as GeoJSON FeatureCollection."""
+    phenom_data = get_sp_event_or_404(event_id, storage)
+    sp_event = phenom_data["sp_event"]
     
     try:
-        if include_impacts and phenomenon.impact_metrics:
-            geojson = phenomenon_to_geojson_with_impacts(
-                phenomenon,
+        if include_impacts and sp_event.impact_metrics:
+            geojson = sp_event_to_geojson_with_impacts(
+                sp_event,
                 zone_index=scenario,
             )
         else:
-            geojson = phenomenon_to_geojson(
-                phenomenon,
+            geojson = sp_event_to_geojson(
+                sp_event,
                 include_zones=include_zones,
                 zone_index=scenario,
                 include_attributes=include_attributes,
             )
         
-        # Add phenomenon ID to metadata
-        geojson["metadata"]["phenomenon_id"] = phenomenon_id
+        # Add sp_event ID to metadata
+        geojson["metadata"]["event_id"] = event_id
         
         return JSONResponse(content=geojson)
     
@@ -422,25 +422,25 @@ async def get_geojson(
 
 
 @router.get(
-    "/phenomena/{phenomenon_id}/summary",
-    response_model=PhenomenonSummary,
-    summary="Get phenomenon summary",
-    description="Get summary statistics for phenomenon"
+    "/sp_events/{event_id}/summary",
+    response_model=EventSummary,
+    summary="Get sp_event summary",
+    description="Get summary statistics for sp_event"
 )
 async def get_summary(
-    phenomenon_id: str,
-    storage: PhenomenonStorage = Depends(get_storage),
+    event_id: str,
+    storage: EventStorage = Depends(get_storage),
 ):
-    """Get phenomenon summary statistics."""
-    phenom_data = get_phenomenon_or_404(phenomenon_id, storage)
-    phenomenon = phenom_data["phenomenon"]
+    """Get sp_event summary statistics."""
+    phenom_data = get_sp_event_or_404(event_id, storage)
+    sp_event = phenom_data["sp_event"]
     
     try:
-        summary = phenomenon.get_summary()
+        summary = sp_event.get_summary()
         
-        return PhenomenonSummary(
-            phenomenon_id=phenomenon_id,
-            phenomenon_type=phenom_data["phenomenon_type"],
+        return EventSummary(
+            event_id=event_id,
+            event_type=phenom_data["event_type"],
             n_entities=summary["n_entities"],
             n_scenarios=summary.get("n_zones", 0),
             coordinate_bounds=summary["coordinate_bounds"],
@@ -463,48 +463,48 @@ async def get_summary(
 
 
 @router.get(
-    "/phenomena/{phenomenon_id}/zones/{zone_index}/bounds",
+    "/sp_events/{event_id}/zones/{zone_index}/bounds",
     response_model=ZoneBounds,
     summary="Get zone bounding box",
     description="Get geographic bounds for a specific zone"
 )
 async def get_zone_bounds_endpoint(
-    phenomenon_id: str,
+    event_id: str,
     zone_index: int,
-    storage: PhenomenonStorage = Depends(get_storage),
+    storage: EventStorage = Depends(get_storage),
 ):
     """Get bounding box for specific zone."""
-    phenom_data = get_phenomenon_or_404(phenomenon_id, storage)
-    phenomenon = phenom_data["phenomenon"]
+    phenom_data = get_sp_event_or_404(event_id, storage)
+    sp_event = phenom_data["sp_event"]
     
-    bounds = get_zone_bounds(phenomenon, zone_index)
+    bounds = get_zone_bounds(sp_event, zone_index)
     
     return ZoneBounds(
-        phenomenon_id=phenomenon_id,
+        event_id=event_id,
         zone_index=zone_index,
         bounds=bounds,
     )
 
 
 @router.get(
-    "/phenomena/{phenomenon_id}/zones/{zone_index}/stats",
+    "/sp_events/{event_id}/zones/{zone_index}/stats",
     response_model=ZoneStatistics,
     summary="Get zone statistics",
     description="Get statistical summary for a specific zone"
 )
 async def get_zone_stats_endpoint(
-    phenomenon_id: str,
+    event_id: str,
     zone_index: int,
-    storage: PhenomenonStorage = Depends(get_storage),
+    storage: EventStorage = Depends(get_storage),
 ):
     """Get statistics for specific zone."""
-    phenom_data = get_phenomenon_or_404(phenomenon_id, storage)
-    phenomenon = phenom_data["phenomenon"]
+    phenom_data = get_sp_event_or_404(event_id, storage)
+    sp_event = phenom_data["sp_event"]
     
-    stats = get_zone_statistics(phenomenon, zone_index)
+    stats = get_zone_statistics(sp_event, zone_index)
     
     return ZoneStatistics(
-        phenomenon_id=phenomenon_id,
+        event_id=event_id,
         zone_index=zone_index,
         statistics=stats,
     )

@@ -1,14 +1,14 @@
-"""Tests for flood phenomenon implementation."""
+"""Tests for flood sp_event implementation."""
 
 import pytest
 import numpy as np
 import pandas as pd
 
-from src.core.phenomena.flood import FloodPhenomenon, build_flood_model_from_data
+from src.core.sp_events.flood import FloodEvent, build_flood_model_from_data
 
 
-class TestFloodPhenomenon:
-    """Test FloodPhenomenon class."""
+class TestFloodEvent:
+    """Test FloodEvent class."""
     
     @pytest.fixture
     def sample_flood_data(self):
@@ -34,8 +34,8 @@ class TestFloodPhenomenon:
         }
     
     def test_initialization(self, sample_flood_data):
-        """Test flood phenomenon initialization."""
-        flood = FloodPhenomenon(**sample_flood_data)
+        """Test flood sp_event initialization."""
+        flood = FloodEvent(**sample_flood_data)
         
         assert len(flood.entity_ids) == 10
         assert flood.coordinates.shape == (10, 2)
@@ -46,14 +46,14 @@ class TestFloodPhenomenon:
         assert "land_values" in flood.attributes
         assert "building_values" in flood.attributes
     
-    def test_get_phenomenon_type(self, sample_flood_data):
-        """Test phenomenon type identifier."""
-        flood = FloodPhenomenon(**sample_flood_data)
-        assert flood.get_phenomenon_type() == "flood"
+    def test_get_event_type(self, sample_flood_data):
+        """Test sp_event type identifier."""
+        flood = FloodEvent(**sample_flood_data)
+        assert flood.get_event_type() == "flood"
     
     def test_compute_zones(self, sample_flood_data):
         """Test flood zone computation."""
-        flood = FloodPhenomenon(**sample_flood_data)
+        flood = FloodEvent(**sample_flood_data)
         
         zones = flood.compute_zones({
             "min_water_level": 6.0,
@@ -73,7 +73,7 @@ class TestFloodPhenomenon:
     
     def test_compute_zones_stores_params(self, sample_flood_data):
         """Test that compute_zones stores scenario parameters."""
-        flood = FloodPhenomenon(**sample_flood_data)
+        flood = FloodEvent(**sample_flood_data)
         
         params = {"min_water_level": 6.0, "max_water_level": 12.0}
         flood.compute_zones(params)
@@ -83,7 +83,7 @@ class TestFloodPhenomenon:
     
     def test_compute_impact(self, sample_flood_data):
         """Test flood impact computation."""
-        flood = FloodPhenomenon(**sample_flood_data)
+        flood = FloodEvent(**sample_flood_data)
         
         # Compute zones first
         zones = flood.compute_zones({
@@ -117,7 +117,7 @@ class TestFloodPhenomenon:
     
     def test_compute_impact_without_zones_raises_error(self, sample_flood_data):
         """Test that compute_impact fails without zones."""
-        flood = FloodPhenomenon(**sample_flood_data)
+        flood = FloodEvent(**sample_flood_data)
         
         # This should work even without compute_zones if we pass zones
         zones = [np.zeros(10)]  # Dummy zones
@@ -130,7 +130,7 @@ class TestFloodPhenomenon:
     
     def test_impact_increases_with_water_level(self, sample_flood_data):
         """Test that impact generally increases with water level."""
-        flood = FloodPhenomenon(**sample_flood_data)
+        flood = FloodEvent(**sample_flood_data)
         
         zones = flood.compute_zones({
             "min_water_level": 6.0,
@@ -152,7 +152,7 @@ class TestFloodPhenomenon:
     
     def test_to_dataframe(self, sample_flood_data):
         """Test DataFrame export."""
-        flood = FloodPhenomenon(**sample_flood_data)
+        flood = FloodEvent(**sample_flood_data)
         
         df = flood.to_dataframe()
         
@@ -169,7 +169,7 @@ class TestFloodPhenomenon:
     
     def test_to_dataframe_with_zones_and_impacts(self, sample_flood_data):
         """Test DataFrame export with computed data."""
-        flood = FloodPhenomenon(**sample_flood_data)
+        flood = FloodEvent(**sample_flood_data)
         
         zones = flood.compute_zones({
             "min_water_level": 6.0,
@@ -195,12 +195,12 @@ class TestFloodPhenomenon:
     
     def test_get_summary(self, sample_flood_data):
         """Test flood summary statistics."""
-        flood = FloodPhenomenon(**sample_flood_data)
+        flood = FloodEvent(**sample_flood_data)
         
         summary = flood.get_summary()
         
-        # Base phenomenon fields
-        assert summary["phenomenon_type"] == "flood"
+        # Base sp_event fields
+        assert summary["event_type"] == "flood"
         assert summary["n_entities"] == 10
         
         # Flood-specific fields
@@ -238,7 +238,7 @@ class TestBuildFloodModelFromData:
         """Test building flood model from DataFrame with default fields."""
         flood = build_flood_model_from_data(sample_dataframe)
         
-        assert isinstance(flood, FloodPhenomenon)
+        assert isinstance(flood, FloodEvent)
         assert len(flood.entity_ids) == 20
         assert flood.coordinates.shape == (20, 2)
         assert flood.adjacency_matrix.shape == (20, 20)
@@ -307,7 +307,7 @@ class TestFloodZoneLogic:
         land_values = np.array([100000, 150000, 120000])
         building_values = np.array([200000, 250000, 220000])
         
-        flood = FloodPhenomenon(
+        flood = FloodEvent(
             parcel_ids, coordinates, adjacency,
             elevations, land_values, building_values
         )
@@ -331,7 +331,7 @@ class TestFloodZoneLogic:
         land_values = np.array([100000, 100000])
         building_values = np.array([100000, 100000])
         
-        flood = FloodPhenomenon(
+        flood = FloodEvent(
             parcel_ids, coordinates, adjacency,
             elevations, land_values, building_values
         )

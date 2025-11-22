@@ -9,20 +9,20 @@
 
 ## Objective
 
-Design and document RESTful API endpoints that leverage the multi-phenomenon architecture. The API should be phenomenon-agnostic, supporting floods, contagion, supply-chain disruptions, and future phenomena types.
+Design and document RESTful API endpoints that leverage the multi-event architecture. The API should be event-agnostic, supporting floods, contagion, supply-chain disruptions, and future events types.
 
 ---
 
 ## Background
 
-With the multi-phenomenon refactoring complete, we now have:
-- ✅ `SpatialPhenomenon` abstract base class
-- ✅ `FloodPhenomenon` implementation
-- ✅ Generic `phenomenon_to_geojson()` conversion
+With the multi-event refactoring complete, we now have:
+- ✅ `SpatialEvent` abstract base class
+- ✅ `FloodEvent` implementation
+- ✅ Generic `event_to_geojson()` conversion
 - ✅ Extensible architecture
 
 The API should provide endpoints for:
-1. Creating/loading phenomena
+1. Creating/loading events
 2. Computing zones/scenarios
 3. Computing impacts
 4. Retrieving results (GeoJSON, summary stats, etc.)
@@ -38,7 +38,7 @@ The API should provide endpoints for:
 - Stateless operations where possible
 
 ### 2. Phenomenon-Agnostic
-- API should work with ANY phenomenon type
+- API should work with ANY event type
 - Phenomenon type specified in request body
 - Same endpoints for flood, contagion, supply-chain, etc.
 
@@ -69,33 +69,33 @@ GET  /info                      # API version, capabilities
 
 ### Phenomena Management
 ```
-POST   /phenomena               # Create phenomenon from data
-GET    /phenomena/{id}          # Get phenomenon info
-DELETE /phenomena/{id}          # Delete phenomenon
-GET    /phenomena               # List all phenomena (paginated)
+POST   /events               # Create event from data
+GET    /events/{id}          # Get event info
+DELETE /events/{id}          # Delete event
+GET    /events               # List all events (paginated)
 ```
 
 ### Computation
 ```
-POST   /phenomena/{id}/zones    # Compute zones/scenarios
-POST   /phenomena/{id}/impact   # Compute impact metrics
-GET    /phenomena/{id}/status   # Get computation status
+POST   /events/{id}/zones    # Compute zones/scenarios
+POST   /events/{id}/impact   # Compute impact metrics
+GET    /events/{id}/status   # Get computation status
 ```
 
 ### Results & Visualization
 ```
-GET    /phenomena/{id}/geojson               # Get GeoJSON (all scenarios)
-GET    /phenomena/{id}/geojson/{scenario}    # Get specific scenario
-GET    /phenomena/{id}/summary               # Get summary statistics
-GET    /phenomena/{id}/zones/{zone}/bounds   # Get zone bounding box
-GET    /phenomena/{id}/zones/{zone}/stats    # Get zone statistics
+GET    /events/{id}/geojson               # Get GeoJSON (all scenarios)
+GET    /events/{id}/geojson/{scenario}    # Get specific scenario
+GET    /events/{id}/summary               # Get summary statistics
+GET    /events/{id}/zones/{zone}/bounds   # Get zone bounding box
+GET    /events/{id}/zones/{zone}/stats    # Get zone statistics
 ```
 
 ### Export
 ```
-GET    /phenomena/{id}/export/geojson        # Download all scenarios as ZIP
-GET    /phenomena/{id}/export/csv            # Export as CSV
-GET    /phenomena/{id}/export/dataframe      # Export as JSON (DataFrame format)
+GET    /events/{id}/export/geojson        # Download all scenarios as ZIP
+GET    /events/{id}/export/csv            # Export as CSV
+GET    /events/{id}/export/dataframe      # Export as JSON (DataFrame format)
 ```
 
 ---
@@ -104,14 +104,14 @@ GET    /phenomena/{id}/export/dataframe      # Export as JSON (DataFrame format)
 
 ### 1. Create Phenomenon
 
-**Endpoint:** `POST /api/v1/phenomena`
+**Endpoint:** `POST /api/v1/events`
 
-**Purpose:** Create a new spatial phenomenon from uploaded data
+**Purpose:** Create a new spatial event from uploaded data
 
 **Request Body:**
 ```json
 {
-  "phenomenon_type": "flood",
+  "event_type": "flood",
   "data": {
     "entity_ids": ["P001", "P002", "P003"],
     "coordinates": [[29.76, -95.37], [29.77, -95.38], [29.78, -95.39]],
@@ -133,15 +133,15 @@ GET    /phenomena/{id}/export/dataframe      # Export as JSON (DataFrame format)
 ```json
 {
   "id": "flood_abc123",
-  "phenomenon_type": "flood",
+  "event_type": "flood",
   "n_entities": 3,
   "created_at": "2024-11-21T17:30:00Z",
   "status": "ready",
   "links": {
-    "self": "/api/v1/phenomena/flood_abc123",
-    "compute_zones": "/api/v1/phenomena/flood_abc123/zones",
-    "compute_impact": "/api/v1/phenomena/flood_abc123/impact",
-    "geojson": "/api/v1/phenomena/flood_abc123/geojson"
+    "self": "/api/v1/events/flood_abc123",
+    "compute_zones": "/api/v1/events/flood_abc123/zones",
+    "compute_impact": "/api/v1/events/flood_abc123/impact",
+    "geojson": "/api/v1/events/flood_abc123/geojson"
   }
 }
 ```
@@ -150,9 +150,9 @@ GET    /phenomena/{id}/export/dataframe      # Export as JSON (DataFrame format)
 
 ### 2. Compute Zones
 
-**Endpoint:** `POST /api/v1/phenomena/{id}/zones`
+**Endpoint:** `POST /api/v1/events/{id}/zones`
 
-**Purpose:** Compute zones/scenarios for phenomenon
+**Purpose:** Compute zones/scenarios for event
 
 **Request Body (Flood):**
 ```json
@@ -178,13 +178,13 @@ GET    /phenomena/{id}/export/dataframe      # Export as JSON (DataFrame format)
 **Response (200 OK):**
 ```json
 {
-  "phenomenon_id": "flood_abc123",
+  "event_id": "flood_abc123",
   "n_scenarios": 12,
   "scenarios_computed": true,
   "computation_time_ms": 150,
   "links": {
-    "geojson": "/api/v1/phenomena/flood_abc123/geojson",
-    "compute_impact": "/api/v1/phenomena/flood_abc123/impact"
+    "geojson": "/api/v1/events/flood_abc123/geojson",
+    "compute_impact": "/api/v1/events/flood_abc123/impact"
   }
 }
 ```
@@ -193,7 +193,7 @@ GET    /phenomena/{id}/export/dataframe      # Export as JSON (DataFrame format)
 
 ### 3. Compute Impact
 
-**Endpoint:** `POST /api/v1/phenomena/{id}/impact`
+**Endpoint:** `POST /api/v1/events/{id}/impact`
 
 **Purpose:** Compute impact metrics for computed zones
 
@@ -210,7 +210,7 @@ GET    /phenomena/{id}/export/dataframe      # Export as JSON (DataFrame format)
 **Response (200 OK):**
 ```json
 {
-  "phenomenon_id": "flood_abc123",
+  "event_id": "flood_abc123",
   "impact_metrics": {
     "n_scenarios": 12,
     "total_property_loss": [0, 50000, 125000, ...],
@@ -221,8 +221,8 @@ GET    /phenomena/{id}/export/dataframe      # Export as JSON (DataFrame format)
   },
   "computation_time_ms": 75,
   "links": {
-    "geojson": "/api/v1/phenomena/flood_abc123/geojson",
-    "summary": "/api/v1/phenomena/flood_abc123/summary"
+    "geojson": "/api/v1/events/flood_abc123/geojson",
+    "summary": "/api/v1/events/flood_abc123/summary"
   }
 }
 ```
@@ -231,13 +231,13 @@ GET    /phenomena/{id}/export/dataframe      # Export as JSON (DataFrame format)
 
 ### 4. Get GeoJSON
 
-**Endpoint:** `GET /api/v1/phenomena/{id}/geojson`
+**Endpoint:** `GET /api/v1/events/{id}/geojson`
 
 **Query Parameters:**
 - `scenario` (int, optional): Specific scenario index
 - `include_zones` (bool, default=true): Include zone data
 - `include_impacts` (bool, default=true): Include impact data
-- `include_attributes` (bool, default=true): Include phenomenon attributes
+- `include_attributes` (bool, default=true): Include event attributes
 
 **Response (200 OK):**
 ```json
@@ -252,7 +252,7 @@ GET    /phenomena/{id}/export/dataframe      # Export as JSON (DataFrame format)
       },
       "properties": {
         "id": "P001",
-        "phenomenon_type": "flood",
+        "event_type": "flood",
         "elevations": 5.0,
         "land_values": 100000.0,
         "building_values": 200000.0,
@@ -264,8 +264,8 @@ GET    /phenomena/{id}/export/dataframe      # Export as JSON (DataFrame format)
     }
   ],
   "metadata": {
-    "phenomenon_id": "flood_abc123",
-    "phenomenon_type": "flood",
+    "event_id": "flood_abc123",
+    "event_type": "flood",
     "n_entities": 3,
     "n_scenarios": 12,
     "has_zones": true,
@@ -284,13 +284,13 @@ GET    /phenomena/{id}/export/dataframe      # Export as JSON (DataFrame format)
 
 ### 5. Get Summary
 
-**Endpoint:** `GET /api/v1/phenomena/{id}/summary`
+**Endpoint:** `GET /api/v1/events/{id}/summary`
 
 **Response (200 OK):**
 ```json
 {
-  "phenomenon_id": "flood_abc123",
-  "phenomenon_type": "flood",
+  "event_id": "flood_abc123",
+  "event_type": "flood",
   "n_entities": 100,
   "n_scenarios": 12,
   "coordinate_bounds": {
@@ -317,12 +317,12 @@ GET    /phenomena/{id}/export/dataframe      # Export as JSON (DataFrame format)
 
 ### 6. Get Zone Bounds
 
-**Endpoint:** `GET /api/v1/phenomena/{id}/zones/{zone_index}/bounds`
+**Endpoint:** `GET /api/v1/events/{id}/zones/{zone_index}/bounds`
 
 **Response (200 OK):**
 ```json
 {
-  "phenomenon_id": "flood_abc123",
+  "event_id": "flood_abc123",
   "zone_index": 5,
   "bounds": {
     "min_lat": 29.72,
@@ -337,12 +337,12 @@ GET    /phenomena/{id}/export/dataframe      # Export as JSON (DataFrame format)
 
 ### 7. Get Zone Statistics
 
-**Endpoint:** `GET /api/v1/phenomena/{id}/zones/{zone_index}/stats`
+**Endpoint:** `GET /api/v1/events/{id}/zones/{zone_index}/stats`
 
 **Response (200 OK):**
 ```json
 {
-  "phenomenon_id": "flood_abc123",
+  "event_id": "flood_abc123",
   "zone_index": 5,
   "n_entities": 25,
   "percent_affected": 25.0,
@@ -366,7 +366,7 @@ GET    /phenomena/{id}/export/dataframe      # Export as JSON (DataFrame format)
 
 ### 8. Export GeoJSON (Batch)
 
-**Endpoint:** `GET /api/v1/phenomena/{id}/export/geojson`
+**Endpoint:** `GET /api/v1/events/{id}/export/geojson`
 
 **Response (200 OK):**
 - Content-Type: `application/zip`
@@ -388,7 +388,7 @@ GET    /phenomena/{id}/export/dataframe      # Export as JSON (DataFrame format)
     "code": "PHENOMENON_NOT_FOUND",
     "message": "Phenomenon with ID 'flood_xyz' not found",
     "details": {
-      "phenomenon_id": "flood_xyz"
+      "event_id": "flood_xyz"
     }
   }
 }
@@ -404,8 +404,8 @@ GET    /phenomena/{id}/export/dataframe      # Export as JSON (DataFrame format)
 **Example Error Codes:**
 - `PHENOMENON_NOT_FOUND` - Phenomenon ID doesn't exist
 - `ZONES_NOT_COMPUTED` - Zones must be computed before impact
-- `INVALID_PHENOMENON_TYPE` - Unknown phenomenon type
-- `INVALID_SCENARIO_PARAMS` - Invalid parameters for phenomenon type
+- `INVALID_PHENOMENON_TYPE` - Unknown event type
+- `INVALID_SCENARIO_PARAMS` - Invalid parameters for event type
 - `COMPUTATION_FAILED` - Error during zone/impact computation
 
 ---
@@ -444,7 +444,7 @@ origins = [
 - **Development:** No limits
 - **Production:** 
   - 100 requests/minute per IP
-  - 10 phenomenon creations/hour per IP
+  - 10 event creations/hour per IP
   - Exemptions for authenticated users
 
 ---
@@ -454,8 +454,8 @@ origins = [
 ### Phase 1: Basic CRUD (2 hours)
 1. Create FastAPI app structure
 2. Implement health and info endpoints
-3. Implement phenomenon creation (POST /phenomena)
-4. Implement phenomenon retrieval (GET /phenomena/{id})
+3. Implement event creation (POST /events)
+4. Implement event retrieval (GET /events/{id})
 5. In-memory storage for development
 
 ### Phase 2: Computation Endpoints (1.5 hours)
@@ -485,7 +485,7 @@ origins = [
 - Test each endpoint with valid inputs
 - Test error conditions
 - Test query parameters
-- Test different phenomenon types
+- Test different event types
 
 ### Integration Tests
 - Full workflow tests (create → zones → impact → geojson)
@@ -508,7 +508,7 @@ FastAPI will auto-generate interactive documentation at:
 - `/openapi.json` - OpenAPI specification
 
 **Example tags:**
-- `phenomena` - Phenomenon management
+- `events` - Phenomenon management
 - `computation` - Zone and impact computation
 - `visualization` - GeoJSON and visualization endpoints
 - `export` - Data export endpoints
@@ -518,7 +518,7 @@ FastAPI will auto-generate interactive documentation at:
 ## Success Criteria
 
 - [ ] All endpoints implemented and functional
-- [ ] API works with FloodPhenomenon
+- [ ] API works with FloodEvent
 - [ ] GeoJSON output is valid and Leaflet.js compatible
 - [ ] Comprehensive error handling
 - [ ] Request/response validation with Pydantic
@@ -541,7 +541,7 @@ After TICKET 10:
 
 ## Notes
 
-- API design is phenomenon-agnostic by design
+- API design is event-agnostic by design
 - Same endpoints will work for future ContagionPhenomenon, SupplyChainPhenomenon
 - GeoJSON format ensures compatibility with any mapping library
 - Architecture supports both synchronous and async operations

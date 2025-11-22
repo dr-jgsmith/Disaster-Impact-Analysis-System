@@ -9,7 +9,7 @@
 
 ## Overview
 
-Successfully refactored DIAS to support multiple spatial phenomena types using abstract base classes and clean separation of concerns. The architecture now supports floods, and can easily be extended to contagion, supply-chain disruptions, and other spatial phenomena.
+Successfully refactored DIAS to support multiple spatial events types using abstract base classes and clean separation of concerns. The architecture now supports floods, and can easily be extended to contagion, supply-chain disruptions, and other spatial events.
 
 ---
 
@@ -17,10 +17,10 @@ Successfully refactored DIAS to support multiple spatial phenomena types using a
 
 ### Phase 1: Abstract Base Classes ✅
 
-**File:** `src/core/base/phenomenon.py` (246 lines)
+**File:** `src/core/base/event.py` (246 lines)
 
-- Created `SpatialPhenomenon` abstract base class
-- Defines interface for all phenomena types
+- Created `SpatialEvent` abstract base class
+- Defines interface for all events types
 - Common functionality:
   - `to_dict()` - Export to dictionary
   - `to_dataframe()` - Export to pandas DataFrame  
@@ -29,33 +29,33 @@ Successfully refactored DIAS to support multiple spatial phenomena types using a
 - Abstract methods that subclasses must implement:
   - `compute_zones()` - Phenomenon-specific zone computation
   - `compute_impact()` - Phenomenon-specific impact calculation
-  - `get_phenomenon_type()` - Type identifier
+  - `get_event_type()` - Type identifier
 
 **Benefits:**
-- ✅ Enforces consistent interface across all phenomena
+- ✅ Enforces consistent interface across all events
 - ✅ Reduces code duplication
-- ✅ Makes visualization layer phenomenon-agnostic
+- ✅ Makes visualization layer event-agnostic
 - ✅ Industry-standard design pattern (ABC)
 
 ---
 
-### Phase 2: FloodPhenomenon Implementation ✅
+### Phase 2: FloodEvent Implementation ✅
 
-**File:** `src/core/phenomena/flood.py` (409 lines)
+**File:** `src/core/events/flood.py` (409 lines)
 
-- `FloodPhenomenon` class implementing `SpatialPhenomenon`
+- `FloodEvent` class implementing `SpatialEvent`
 - Migrated all logic from old `DisasterImpactModel`
 - Key methods:
   - `compute_zones()` - Identifies flooded parcels at different water levels
   - `compute_impact()` - Calculates property value loss
-  - `get_phenomenon_type()` - Returns "flood"
+  - `get_event_type()` - Returns "flood"
   - `to_dataframe()` - Flood-specific DataFrame export
   - `get_summary()` - Flood-specific summary stats
 - Factory function `build_flood_model_from_data()` for convenience
 
 **Example Usage:**
 ```python
-from src.core.phenomena.flood import build_flood_model_from_data
+from src.core.events.flood import build_flood_model_from_data
 
 # Build from DataFrame
 flood = build_flood_model_from_data(parcel_data)
@@ -79,7 +79,7 @@ print(f"Affected parcels: {impact['affected_parcels'][0]}")
 **Benefits:**
 - ✅ Clean, documented API
 - ✅ Maintains all original functionality
-- ✅ Extensible to other phenomena
+- ✅ Extensible to other events
 - ✅ Easy to test and maintain
 
 ---
@@ -89,24 +89,24 @@ print(f"Affected parcels: {impact['affected_parcels'][0]}")
 **File:** `src/core/visualization/geojson.py` (276 lines)
 
 **Functions:**
-1. `phenomenon_to_geojson()` - Convert ANY phenomenon to GeoJSON
-2. `phenomenon_to_geojson_with_impacts()` - Include impact metrics
+1. `event_to_geojson()` - Convert ANY event to GeoJSON
+2. `event_to_geojson_with_impacts()` - Include impact metrics
 3. `get_zone_bounds()` - Get bounding box for zone
 4. `get_zone_statistics()` - Get statistics for zone
 5. `export_all_scenarios()` - Batch export all scenarios
 
 **Example Usage:**
 ```python
-from src.core.visualization.geojson import phenomenon_to_geojson
+from src.core.visualization.geojson import event_to_geojson
 
 # Works with flood
-flood_geojson = phenomenon_to_geojson(flood)
+flood_geojson = event_to_geojson(flood)
 
 # Would work with contagion (when implemented)
-contagion_geojson = phenomenon_to_geojson(contagion)
+contagion_geojson = event_to_geojson(contagion)
 
 # Would work with supply-chain (when implemented)
-supply_chain_geojson = phenomenon_to_geojson(supply_chain)
+supply_chain_geojson = event_to_geojson(supply_chain)
 
 # Save to file
 import json
@@ -127,7 +127,7 @@ with open("flood_map.geojson", "w") as f:
       },
       "properties": {
         "id": "P001",
-        "phenomenon_type": "flood",
+        "event_type": "flood",
         "elevations": 5.0,
         "land_values": 100000.0,
         "building_values": 200000.0,
@@ -137,7 +137,7 @@ with open("flood_map.geojson", "w") as f:
     }
   ],
   "metadata": {
-    "phenomenon_type": "flood",
+    "event_type": "flood",
     "n_entities": 100,
     "has_zones": true,
     "has_impacts": true
@@ -147,7 +147,7 @@ with open("flood_map.geojson", "w") as f:
 
 **Benefits:**
 - ✅ Standard GeoJSON format (Leaflet.js, QGIS compatible)
-- ✅ Works with any phenomenon type
+- ✅ Works with any event type
 - ✅ Flexible options (zones, impacts, attributes)
 - ✅ Ready for web mapping
 
@@ -157,13 +157,13 @@ with open("flood_map.geojson", "w") as f:
 
 ### Test Coverage ✅
 
-**test_base_phenomenon.py** (193 lines)
+**test_base_event.py** (193 lines)
 - Tests abstract base class behavior
 - Verifies interface enforcement
 - Tests common functionality
 - 15+ test cases
 
-**test_flood_phenomenon.py** (354 lines)
+**test_flood_event.py** (354 lines)
 - Tests flood implementation
 - Zone computation logic
 - Impact calculation accuracy
@@ -194,15 +194,15 @@ src/core/
 │
 ├── base/                          # NEW - Abstractions
 │   ├── __init__.py
-│   └── phenomenon.py              # SpatialPhenomenon ABC
+│   └── event.py              # SpatialEvent ABC
 │
-├── phenomena/                     # NEW - Implementations
+├── events/                     # NEW - Implementations
 │   ├── __init__.py
-│   └── flood.py                   # FloodPhenomenon
+│   └── flood.py                   # FloodEvent
 │
 └── visualization/                 # NEW - Generic viz
     ├── __init__.py
-    └── geojson.py                 # phenomenon_to_geojson()
+    └── geojson.py                 # event_to_geojson()
 ```
 
 ### API Imports
@@ -210,10 +210,10 @@ src/core/
 ```python
 # Clean, organized API
 from src.core import (
-    SpatialPhenomenon,              # Base class
-    FloodPhenomenon,                # Flood implementation
+    SpatialEvent,              # Base class
+    FloodEvent,                # Flood implementation
     build_flood_model_from_data,    # Factory function
-    phenomenon_to_geojson,          # Visualization
+    event_to_geojson,          # Visualization
     jax_ops,                        # Utilities
 )
 ```
@@ -226,7 +226,7 @@ from src.core import (
 
 **ContagionPhenomenon** (for disease/social spread)
 ```python
-class ContagionPhenomenon(SpatialPhenomenon):
+class ContagionPhenomenon(SpatialEvent):
     def __init__(self, person_ids, locations, social_network, 
                  population, health_status):
         attributes = {
@@ -243,13 +243,13 @@ class ContagionPhenomenon(SpatialPhenomenon):
         # Health outcomes, economic cost
         pass
     
-    def get_phenomenon_type(self):
+    def get_event_type(self):
         return "contagion"
 ```
 
 **SupplyChainPhenomenon** (for disruption cascades)
 ```python
-class SupplyChainPhenomenon(SpatialPhenomenon):
+class SupplyChainPhenomenon(SpatialEvent):
     def __init__(self, facility_ids, locations, supply_dependencies,
                  inventory, capacity):
         attributes = {
@@ -266,16 +266,16 @@ class SupplyChainPhenomenon(SpatialPhenomenon):
         # Economic loss, delay costs
         pass
     
-    def get_phenomenon_type(self):
+    def get_event_type(self):
         return "supply_chain"
 ```
 
 **Same visualization works for all!**
 ```python
 # All use the same GeoJSON conversion
-flood_geojson = phenomenon_to_geojson(flood)
-contagion_geojson = phenomenon_to_geojson(contagion)
-supply_chain_geojson = phenomenon_to_geojson(supply_chain)
+flood_geojson = event_to_geojson(flood)
+contagion_geojson = event_to_geojson(contagion)
+supply_chain_geojson = event_to_geojson(supply_chain)
 
 # All work with same Leaflet.js visualization!
 ```
@@ -286,8 +286,8 @@ supply_chain_geojson = phenomenon_to_geojson(supply_chain)
 
 | Category | Files | Lines | Description |
 |----------|-------|-------|-------------|
-| **Base Classes** | 1 | 246 | Abstract phenomenon interface |
-| **Implementations** | 1 | 409 | Flood phenomenon |
+| **Base Classes** | 1 | 246 | Abstract event interface |
+| **Implementations** | 1 | 409 | Flood event |
 | **Visualization** | 1 | 276 | Generic GeoJSON utilities |
 | **Tests** | 3 | 927 | Comprehensive test coverage |
 | **Total** | 6 | 1,858 | New production code |
@@ -301,12 +301,12 @@ supply_chain_geojson = phenomenon_to_geojson(supply_chain)
 ## Validation Checklist ✅
 
 - [x] Abstract base class defines clear interface
-- [x] FloodPhenomenon implements all abstract methods
-- [x] Generic GeoJSON works with FloodPhenomenon
+- [x] FloodEvent implements all abstract methods
+- [x] Generic GeoJSON works with FloodEvent
 - [x] All code documented with examples
-- [x] Architecture supports multiple phenomena
+- [x] Architecture supports multiple events
 - [x] No flood-specific logic in base classes
-- [x] Visualization layer is phenomenon-agnostic
+- [x] Visualization layer is event-agnostic
 - [x] Ready for Leaflet.js integration
 
 ---
@@ -324,10 +324,10 @@ With the refactoring complete, we can now proceed with:
 - API endpoint design
 
 **Benefits of doing refactoring first:**
-- Visualization will work for ALL phenomena (not just floods)
-- API endpoints will be phenomenon-agnostic
-- Frontend doesn't need to know about phenomenon type
-- Easy to add new phenomena later
+- Visualization will work for ALL events (not just floods)
+- API endpoints will be event-agnostic
+- Frontend doesn't need to know about event type
+- Easy to add new events later
 
 ---
 
@@ -346,7 +346,7 @@ model.compute_impacts(3, 0.8)
 
 **New Way (recommended):**
 ```python
-from src.core.phenomena.flood import build_flood_model_from_data
+from src.core.events.flood import build_flood_model_from_data
 
 flood = build_flood_model_from_data(data)
 flood.compute_zones({"min_water_level": 3, "max_water_level": 14})
@@ -354,7 +354,7 @@ flood.compute_impact(flood.zones, {"loss_percent": 0.8})
 ```
 
 **Benefits of new way:**
-- More explicit about phenomenon type
+- More explicit about event type
 - Better auto-completion in IDEs
 - Easier to extend
 - Cleaner separation of concerns
@@ -364,7 +364,7 @@ flood.compute_impact(flood.zones, {"loss_percent": 0.8})
 ## Acknowledgments
 
 This refactoring establishes a solid, extensible foundation for:
-- ✅ Multi-phenomenon spatial analysis
+- ✅ Multi-event spatial analysis
 - ✅ Universal visualization (Leaflet.js, QGIS, etc.)
 - ✅ Clean API design
 - ✅ Future research applications
@@ -378,15 +378,15 @@ This refactoring establishes a solid, extensible foundation for:
 
 ## Summary
 
-The multi-phenomenon architecture refactoring is **COMPLETE** and **READY** for visualization integration. We now have:
+The multi-event architecture refactoring is **COMPLETE** and **READY** for visualization integration. We now have:
 
-1. **Clean Abstractions** - SpatialPhenomenon base class
-2. **Solid Implementation** - FloodPhenomenon with full functionality
-3. **Generic Visualization** - Works with any phenomenon type
+1. **Clean Abstractions** - SpatialEvent base class
+2. **Solid Implementation** - FloodEvent with full functionality
+3. **Generic Visualization** - Works with any event type
 4. **Comprehensive Tests** - 70+ test cases
-5. **Extensible Design** - Easy to add new phenomena
+5. **Extensible Design** - Easy to add new events
 
-**The architecture validates that we can support floods, contagion, supply-chain disruptions, and other spatial phenomena using the same visualization and API layer.**
+**The architecture validates that we can support floods, contagion, supply-chain disruptions, and other spatial events using the same visualization and API layer.**
 
 Ready to proceed with **TICKET 10-VIZ** to integrate Leaflet.js visualization! 🚀
 

@@ -8,7 +8,7 @@
 
 ## Session Overview
 
-Completed the multi-phenomenon refactoring validation, implemented a complete REST API service, and containerized the entire system with production-ready Docker configuration.
+Completed the multi-event refactoring validation, implemented a complete REST API service, and containerized the entire system with production-ready Docker configuration.
 
 ---
 
@@ -16,17 +16,17 @@ Completed the multi-phenomenon refactoring validation, implemented a complete RE
 
 ### 1. Multi-Phenomenon Architecture Refactoring ✅
 
-**Goal:** Validate and implement extensible architecture for multiple spatial phenomena
+**Goal:** Validate and implement extensible architecture for multiple spatial events
 
 **Deliverables:**
-- Abstract `SpatialPhenomenon` base class
-- `FloodPhenomenon` implementation  
+- Abstract `SpatialEvent` base class
+- `FloodEvent` implementation  
 - Generic GeoJSON visualization utilities
 - 70+ comprehensive tests
 
 **Code:** ~2,800 lines (production + tests + docs)
 
-**Result:** System now supports floods and is extensible to contagion, supply-chain disruptions, and other spatial phenomena.
+**Result:** System now supports floods and is extensible to contagion, supply-chain disruptions, and other spatial events.
 
 ---
 
@@ -64,20 +64,20 @@ Completed the multi-phenomenon refactoring validation, implemented a complete RE
 2. `src/api/models.py` - Pydantic models (236 lines)
 3. `src/api/storage.py` - Storage layer (127 lines)
 4. `src/api/routes/health.py` - Health endpoints (43 lines)
-5. `src/api/routes/phenomena.py` - Main endpoints (428 lines)
+5. `src/api/routes/events.py` - Main endpoints (428 lines)
 6. `tests/integration/test_api.py` - Integration tests (443 lines)
 
 **Code:** 1,373 lines
 
 **API Endpoints:**
-- `POST /api/v1/phenomena` - Create phenomenon
-- `GET /api/v1/phenomena` - List phenomena
-- `GET /api/v1/phenomena/{id}` - Get phenomenon
-- `DELETE /api/v1/phenomena/{id}` - Delete
-- `POST /api/v1/phenomena/{id}/zones` - Compute zones
-- `POST /api/v1/phenomena/{id}/impact` - Compute impact
-- `GET /api/v1/phenomena/{id}/geojson` - Get GeoJSON
-- `GET /api/v1/phenomena/{id}/summary` - Get summary
+- `POST /api/v1/events` - Create event
+- `GET /api/v1/events` - List events
+- `GET /api/v1/events/{id}` - Get event
+- `DELETE /api/v1/events/{id}` - Delete
+- `POST /api/v1/events/{id}/zones` - Compute zones
+- `POST /api/v1/events/{id}/impact` - Compute impact
+- `GET /api/v1/events/{id}/geojson` - Get GeoJSON
+- `GET /api/v1/events/{id}/summary` - Get summary
 - Plus zone bounds/stats endpoints
 
 **Result:** Fully functional REST API with comprehensive validation, error handling, and documentation.
@@ -186,7 +186,7 @@ open http://localhost:8000/docs
 ### 1. Complete Multi-Phenomenon System
 
 ```python
-from src.core.phenomena.flood import build_flood_model_from_data
+from src.core.events.flood import build_flood_model_from_data
 
 # Build flood model
 flood = build_flood_model_from_data(parcel_data)
@@ -203,8 +203,8 @@ impact = flood.compute_impact(zones, {
 })
 
 # Export for visualization
-from src.core.visualization.geojson import phenomenon_to_geojson
-geojson = phenomenon_to_geojson(flood)
+from src.core.visualization.geojson import event_to_geojson
+geojson = event_to_geojson(flood)
 ```
 
 ### 2. REST API Service
@@ -213,17 +213,17 @@ geojson = phenomenon_to_geojson(flood)
 # Start service
 docker-compose up --build
 
-# Create phenomenon
-curl -X POST http://localhost:8000/api/v1/phenomena \
+# Create event
+curl -X POST http://localhost:8000/api/v1/events \
   -H "Content-Type: application/json" \
   -d '{ ... }'
 
 # Compute zones
-curl -X POST http://localhost:8000/api/v1/phenomena/{id}/zones \
+curl -X POST http://localhost:8000/api/v1/events/{id}/zones \
   -d '{"scenario_params": {...}}'
 
 # Get GeoJSON
-curl http://localhost:8000/api/v1/phenomena/{id}/geojson
+curl http://localhost:8000/api/v1/events/{id}/geojson
 ```
 
 ### 3. Interactive Documentation
@@ -262,20 +262,20 @@ docker-compose logs -f
 └────────────┬────────────────────┘
              ↓
 ┌─────────────────────────────────┐
-│  SpatialPhenomenon (Abstract)   │
+│  SpatialEvent (Abstract)   │
 │  - compute_zones()              │
 │  - compute_impact()             │
 └────────────┬────────────────────┘
              ↓
 ┌─────────────────────────────────┐
-│  FloodPhenomenon ✅              │
+│  FloodEvent ✅              │
 │  ContagionPhenomenon (future)   │
 │  SupplyChainPhenomenon (future) │
 └────────────┬────────────────────┘
              ↓
 ┌─────────────────────────────────┐
 │  Visualization (Generic)        │
-│  - phenomenon_to_geojson()      │
+│  - event_to_geojson()      │
 └────────────┬────────────────────┘
              ↓
 ┌─────────────────────────────────┐
@@ -291,7 +291,7 @@ docker-compose logs -f
 
 ### API Architecture
 
-- **Phenomenon-agnostic:** Works for any spatial phenomenon
+- **Phenomenon-agnostic:** Works for any spatial event
 - **GeoJSON-first:** Leaflet.js compatible
 - **Type-safe:** Pydantic validation
 - **Self-documenting:** OpenAPI/Swagger
@@ -314,7 +314,7 @@ docker-compose logs -f
 
 - **70+ tests** for core functionality
 - JAX operations tested
-- Flood phenomenon tested
+- Flood event tested
 - GeoJSON conversion tested
 
 ### Integration Tests ✅
@@ -388,7 +388,7 @@ docker exec dias-api pytest --cov=src tests/
 
 ### Architecture ✅
 
-- [x] Multi-phenomenon support
+- [x] Multi-event support
 - [x] Clean separation of concerns
 - [x] Extensible design
 - [x] Production-ready code
@@ -486,11 +486,11 @@ docker-compose up --build
 # 2. Health check
 curl http://localhost:8000/health
 
-# 3. Create flood phenomenon
-curl -X POST http://localhost:8000/api/v1/phenomena \
+# 3. Create flood event
+curl -X POST http://localhost:8000/api/v1/events \
   -H "Content-Type: application/json" \
   -d '{
-    "phenomenon_type": "flood",
+    "event_type": "flood",
     "data": {
       "entity_ids": ["P001", "P002", "P003"],
       "coordinates": [[29.76, -95.37], [29.77, -95.38], [29.78, -95.39]],
@@ -504,7 +504,7 @@ curl -X POST http://localhost:8000/api/v1/phenomena \
   }'
 
 # 4. Get GeoJSON (use ID from step 3)
-curl http://localhost:8000/api/v1/phenomena/{id}/geojson
+curl http://localhost:8000/api/v1/events/{id}/geojson
 
 # 5. Interactive docs
 open http://localhost:8000/docs
@@ -519,7 +519,7 @@ docker exec dias-api pytest -v
 
 The Disaster Impact Analysis System has been successfully modernized with:
 
-- ✅ Multi-phenomenon architecture
+- ✅ Multi-event architecture
 - ✅ Complete REST API
 - ✅ Production-ready Docker deployment
 - ✅ Comprehensive testing

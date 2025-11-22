@@ -257,12 +257,12 @@ curl http://localhost:8000/health
 ### 4. API Test
 
 ```bash
-# Create phenomenon
-curl -X POST http://localhost:8000/api/v1/phenomena \
+# Create event
+curl -X POST http://localhost:8000/api/v1/events \
   -H "Content-Type: application/json" \
   -d '{...}'
 
-# Should return 201 with phenomenon ID
+# Should return 201 with event ID
 ```
 
 ### 5. Integration Test

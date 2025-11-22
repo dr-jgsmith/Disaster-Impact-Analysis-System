@@ -6,22 +6,22 @@ import tempfile
 import json
 import os
 
-from src.core.phenomena.flood import FloodPhenomenon
+from src.core.sp_events.flood import FloodEvent
 from src.core.visualization.geojson import (
-    phenomenon_to_geojson,
-    phenomenon_to_geojson_with_impacts,
+    sp_event_to_geojson,
+    sp_event_to_geojson_with_impacts,
     get_zone_bounds,
     get_zone_statistics,
     export_all_scenarios,
 )
 
 
-class TestPhenomenonToGeoJSON:
+class TestEventToGeoJSON:
     """Test basic GeoJSON conversion."""
     
     @pytest.fixture
     def sample_flood(self):
-        """Create sample flood phenomenon."""
+        """Create sample flood sp_event."""
         parcel_ids = ["P001", "P002", "P003"]
         coordinates = np.array([[29.76, -95.37], [29.77, -95.38], [29.78, -95.39]])
         adjacency = np.ones((3, 3))
@@ -29,14 +29,14 @@ class TestPhenomenonToGeoJSON:
         land_values = np.array([100000, 150000, 120000])
         building_values = np.array([200000, 250000, 220000])
         
-        return FloodPhenomenon(
+        return FloodEvent(
             parcel_ids, coordinates, adjacency,
             elevations, land_values, building_values
         )
     
     def test_basic_geojson_structure(self, sample_flood):
         """Test basic GeoJSON structure."""
-        geojson = phenomenon_to_geojson(sample_flood)
+        geojson = sp_event_to_geojson(sample_flood)
         
         # Check top-level structure
         assert geojson["type"] == "FeatureCollection"
@@ -48,7 +48,7 @@ class TestPhenomenonToGeoJSON:
     
     def test_feature_geometry(self, sample_flood):
         """Test feature geometry format."""
-        geojson = phenomenon_to_geojson(sample_flood)
+        geojson = sp_event_to_geojson(sample_flood)
         
         feature = geojson["features"][0]
         
@@ -63,14 +63,14 @@ class TestPhenomenonToGeoJSON:
     
     def test_feature_properties(self, sample_flood):
         """Test feature properties."""
-        geojson = phenomenon_to_geojson(sample_flood)
+        geojson = sp_event_to_geojson(sample_flood)
         
         feature = geojson["features"][0]
         props = feature["properties"]
         
         # Check base properties
         assert props["id"] == "P001"
-        assert props["phenomenon_type"] == "flood"
+        assert props["event_type"] == "flood"
         assert "entity_index" in props
         
         # Check attributes (by default included)
@@ -80,18 +80,18 @@ class TestPhenomenonToGeoJSON:
     
     def test_metadata(self, sample_flood):
         """Test metadata."""
-        geojson = phenomenon_to_geojson(sample_flood)
+        geojson = sp_event_to_geojson(sample_flood)
         
         metadata = geojson["metadata"]
         
-        assert metadata["phenomenon_type"] == "flood"
+        assert metadata["event_type"] == "flood"
         assert metadata["n_entities"] == 3
         assert metadata["has_zones"] is False
         assert "coordinate_bounds" in metadata
     
     def test_exclude_attributes(self, sample_flood):
         """Test excluding attributes from properties."""
-        geojson = phenomenon_to_geojson(
+        geojson = sp_event_to_geojson(
             sample_flood,
             include_attributes=False
         )
@@ -104,7 +104,7 @@ class TestPhenomenonToGeoJSON:
     
     def test_include_zones_without_computation(self, sample_flood):
         """Test zone inclusion when zones not computed."""
-        geojson = phenomenon_to_geojson(
+        geojson = sp_event_to_geojson(
             sample_flood,
             include_zones=True
         )
@@ -121,7 +121,7 @@ class TestPhenomenonToGeoJSON:
             "max_water_level": 8.0,
         })
         
-        geojson = phenomenon_to_geojson(
+        geojson = sp_event_to_geojson(
             sample_flood,
             include_zones=True,
             zone_index=None  # All zones
@@ -141,7 +141,7 @@ class TestPhenomenonToGeoJSON:
             "max_water_level": 8.0,
         })
         
-        geojson = phenomenon_to_geojson(
+        geojson = sp_event_to_geojson(
             sample_flood,
             include_zones=True,
             zone_index=1
@@ -155,7 +155,7 @@ class TestPhenomenonToGeoJSON:
         assert "zone_1" not in props
 
 
-class TestPhenomenonToGeoJSONWithImpacts:
+class TestEventToGeoJSONWithImpacts:
     """Test GeoJSON conversion with impact data."""
     
     @pytest.fixture
@@ -168,7 +168,7 @@ class TestPhenomenonToGeoJSONWithImpacts:
         land_values = np.array([100000, 150000, 120000])
         building_values = np.array([200000, 250000, 220000])
         
-        flood = FloodPhenomenon(
+        flood = FloodEvent(
             parcel_ids, coordinates, adjacency,
             elevations, land_values, building_values
         )
@@ -187,7 +187,7 @@ class TestPhenomenonToGeoJSONWithImpacts:
     
     def test_impact_metadata(self, sample_flood_with_impacts):
         """Test impact metrics in metadata."""
-        geojson = phenomenon_to_geojson_with_impacts(sample_flood_with_impacts)
+        geojson = sp_event_to_geojson_with_impacts(sample_flood_with_impacts)
         
         metadata = geojson["metadata"]
         
@@ -197,7 +197,7 @@ class TestPhenomenonToGeoJSONWithImpacts:
     
     def test_impact_properties_specific_zone(self, sample_flood_with_impacts):
         """Test impact in feature properties for specific zone."""
-        geojson = phenomenon_to_geojson_with_impacts(
+        geojson = sp_event_to_geojson_with_impacts(
             sample_flood_with_impacts,
             zone_index=0
         )
@@ -209,7 +209,7 @@ class TestPhenomenonToGeoJSONWithImpacts:
     
     def test_impact_properties_all_zones(self, sample_flood_with_impacts):
         """Test impact in properties for all zones."""
-        geojson = phenomenon_to_geojson_with_impacts(
+        geojson = sp_event_to_geojson_with_impacts(
             sample_flood_with_impacts,
             zone_index=None
         )
@@ -235,7 +235,7 @@ class TestGetZoneBounds:
         land_values = np.random.rand(10) * 100000 + 50000
         building_values = np.random.rand(10) * 200000 + 100000
         
-        flood = FloodPhenomenon(
+        flood = FloodEvent(
             parcel_ids, coordinates, adjacency,
             elevations, land_values, building_values
         )
@@ -268,7 +268,7 @@ class TestGetZoneBounds:
     
     def test_get_bounds_no_zones(self):
         """Test getting bounds when no zones computed."""
-        flood = FloodPhenomenon(
+        flood = FloodEvent(
             ["P001"], np.array([[29.76, -95.37]]), np.array([[1]]),
             np.array([5.0]), np.array([100000]), np.array([200000])
         )
@@ -295,7 +295,7 @@ class TestGetZoneStatistics:
         land_values = np.array([100000, 150000, 120000, 180000])
         building_values = np.array([200000, 250000, 220000, 280000])
         
-        flood = FloodPhenomenon(
+        flood = FloodEvent(
             parcel_ids, coordinates, adjacency,
             elevations, land_values, building_values
         )
@@ -333,7 +333,7 @@ class TestExportAllScenarios:
     def test_export_creates_files(self):
         """Test that export creates GeoJSON files."""
         # Create simple flood
-        flood = FloodPhenomenon(
+        flood = FloodEvent(
             ["P001", "P002"],
             np.array([[29.76, -95.37], [29.77, -95.38]]),
             np.ones((2, 2)),
@@ -365,7 +365,7 @@ class TestExportAllScenarios:
     
     def test_export_without_zones(self):
         """Test export without zones returns empty list."""
-        flood = FloodPhenomenon(
+        flood = FloodEvent(
             ["P001"],
             np.array([[29.76, -95.37]]),
             np.ones((1, 1)),
