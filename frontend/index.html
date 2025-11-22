@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DIAS - Disaster Impact Analysis System</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            display: flex;
+            height: 100vh;
+            background: #f5f5f5;
+        }
+
+        #sidebar {
+            width: 350px;
+            background: white;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        #map {
+            flex: 1;
+            height: 100vh;
+        }
+
+        .header {
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .section {
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .section h2 {
+            font-size: 16px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            margin: 5px 0;
+            border: none;
+            border-radius: 6px;
+            background: #667eea;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background: #5568d3;
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #48bb78;
+        }
+
+        .btn-secondary:hover {
+            background: #38a169;
+        }
+
+        .input-group {
+            margin: 10px 0;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .status.info {
+            background: #e6f7ff;
+            color: #0050b3;
+            border: 1px solid #91d5ff;
+        }
+
+        .status.success {
+            background: #f6ffed;
+            color: #389e0d;
+            border: 1px solid #b7eb8f;
+        }
+
+        .status.error {
+            background: #fff1f0;
+            color: #cf1322;
+            border: 1px solid #ffa39e;
+        }
+
+        .scenario-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .scenario-controls input[type="range"] {
+            flex: 1;
+        }
+
+        .scenario-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .stats {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            font-size: 13px;
+        }
+
+        .stat-label {
+            color: #666;
+        }
+
+        .stat-value {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .legend {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .legend-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            font-size: 13px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+            border: 2px solid #333;
+        }
+    </style>
+</head>
+<body>
+    <div id="sidebar">
+        <div class="header">
+            <h1>DIAS</h1>
+            <p>Disaster Impact Analysis System</p>
+        </div>
+
+        <div class="section">
+            <h2>1. Load Test Data</h2>
+            <button class="btn" onclick="loadTestData()">Load Sample Flood Data</button>
+            <div id="dataStatus"></div>
+        </div>
+
+        <div class="section">
+            <h2>2. Create Phenomenon</h2>
+            <button class="btn" id="createBtn" onclick="createPhenomenon()" disabled>Create Flood Model</button>
+            <div id="createStatus"></div>
+        </div>
+
+        <div class="section">
+            <h2>3. Compute Zones</h2>
+            <div class="input-group">
+                <label>Min Water Level (ft)</label>
+                <input type="number" id="minWater" value="3" min="0" max="20">
+            </div>
+            <div class="input-group">
+                <label>Max Water Level (ft)</label>
+                <input type="number" id="maxWater" value="14" min="0" max="20">
+            </div>
+            <button class="btn" id="computeZonesBtn" onclick="computeZones()" disabled>Compute Flood Zones</button>
+            <div id="zonesStatus"></div>
+        </div>
+
+        <div class="section">
+            <h2>4. Compute Impact</h2>
+            <div class="input-group">
+                <label>Loss Percentage</label>
+                <input type="number" id="lossPct" value="80" min="0" max="100" step="5">
+            </div>
+            <button class="btn btn-secondary" id="computeImpactBtn" onclick="computeImpact()" disabled>Calculate Property Loss</button>
+            <div id="impactStatus"></div>
+        </div>
+
+        <div class="section" id="visualizationSection" style="display: none;">
+            <h2>5. Visualization</h2>
+            
+            <div class="scenario-controls">
+                <span class="scenario-label">Scenario:</span>
+                <input type="range" id="scenarioSlider" min="0" max="0" value="0" oninput="updateScenario(this.value)">
+                <span id="scenarioValue">0</span>
+            </div>
+
+            <button class="btn" onclick="visualizeGeoJSON()">Update Map</button>
+
+            <div id="statsContainer" class="stats" style="display: none;">
+                <div class="stat-row">
+                    <span class="stat-label">Water Level:</span>
+                    <span class="stat-value" id="statWaterLevel">-</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Affected Parcels:</span>
+                    <span class="stat-value" id="statAffected">-</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Total Loss:</span>
+                    <span class="stat-value" id="statLoss">-</span>
+                </div>
+            </div>
+
+            <div class="legend">
+                <div class="legend-title">Impact Zones</div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #2ecc71;"></div>
+                    <span>Not Flooded</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #f39c12;"></div>
+                    <span>Low Impact</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #e74c3c;"></div>
+                    <span>High Impact</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        // Configuration
+        const API_URL = 'http://localhost:8000';
+        
+        // Global state
+        let map;
+        let testData = null;
+        let phenomenonId = null;
+        let currentGeoJSON = null;
+        let currentScenario = 0;
+        let geoJSONLayer = null;
+        let impactMetrics = null;
+
+        // Initialize map
+        function initMap() {
+            map = L.map('map').setView([29.76, -95.37], 12);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Add a simple marker to show the map is working
+            L.marker([29.76, -95.37]).addTo(map)
+                .bindPopup('Houston, TX - Click "Load Sample Flood Data" to start')
+                .openPopup();
+        }
+
+        // Generate sample flood data (Houston area)
+        function generateTestData() {
+            const baseLatitudes = [29.76, 29.77, 29.78, 29.79, 29.80];
+            const baseLongitudes = [-95.37, -95.38, -95.39, -95.40, -95.41];
+            
+            const entityIds = [];
+            const coordinates = [];
+            const elevations = [];
+            const landValues = [];
+            const buildingValues = [];
+
+            for (let i = 0; i < 20; i++) {
+                entityIds.push(`P${String(i + 1).padStart(3, '0')}`);
+                
+                const lat = baseLatitudes[Math.floor(Math.random() * baseLatitudes.length)] + (Math.random() - 0.5) * 0.02;
+                const lon = baseLongitudes[Math.floor(Math.random() * baseLongitudes.length)] + (Math.random() - 0.5) * 0.02;
+                coordinates.push([lat, lon]);
+                
+                elevations.push(Math.random() * 10 + 3); // 3-13 feet
+                landValues.push(Math.random() * 100000 + 50000); // $50k-$150k
+                buildingValues.push(Math.random() * 200000 + 100000); // $100k-$300k
+            }
+
+            // Simple adjacency matrix (all connected for simplicity)
+            const adjacency = Array(20).fill(null).map(() => 
+                Array(20).fill(null).map(() => Math.random() > 0.6 ? 1 : 0)
+            );
+            
+            // Ensure diagonal is 1
+            for (let i = 0; i < 20; i++) {
+                adjacency[i][i] = 1;
+            }
+
+            return {
+                phenomenon_type: 'flood',
+                data: {
+                    entity_ids: entityIds,
+                    coordinates: coordinates,
+                    adjacency_matrix: adjacency,
+                    attributes: {
+                        elevations: elevations,
+                        land_values: landValues,
+                        building_values: buildingValues
+                    }
+                },
+                options: {
+                    use_geodesic: true
+                }
+            };
+        }
+
+        // Step 1: Load test data
+        function loadTestData() {
+            testData = generateTestData();
+            showStatus('dataStatus', 'success', `Generated ${testData.data.entity_ids.length} sample parcels`);
+            document.getElementById('createBtn').disabled = false;
+        }
+
+        // Step 2: Create phenomenon via API
+        async function createPhenomenon() {
+            try {
+                showStatus('createStatus', 'info', 'Creating flood phenomenon...');
+                
+                const response = await fetch(`${API_URL}/api/v1/phenomena`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(testData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+
+                const result = await response.json();
+                phenomenonId = result.id;
+                
+                showStatus('createStatus', 'success', `Created phenomenon: ${phenomenonId}`);
+                document.getElementById('computeZonesBtn').disabled = false;
+            } catch (error) {
+                showStatus('createStatus', 'error', `Error: ${error.message}`);
+                console.error(error);
+            }
+        }
+
+        // Step 3: Compute zones
+        async function computeZones() {
+            try {
+                const minWater = parseFloat(document.getElementById('minWater').value);
+                const maxWater = parseFloat(document.getElementById('maxWater').value);
+                
+                showStatus('zonesStatus', 'info', 'Computing flood zones...');
+
+                const response = await fetch(`${API_URL}/api/v1/phenomena/${phenomenonId}/zones`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        scenario_params: {
+                            min_water_level: minWater,
+                            max_water_level: maxWater
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+
+                const result = await response.json();
+                const nScenarios = result.n_scenarios;
+                
+                showStatus('zonesStatus', 'success', 
+                    `Computed ${nScenarios} scenarios (${minWater}ft - ${maxWater}ft)`);
+                
+                // Update scenario slider
+                document.getElementById('scenarioSlider').max = nScenarios - 1;
+                document.getElementById('scenarioSlider').value = 0;
+                document.getElementById('scenarioValue').textContent = '0';
+                
+                document.getElementById('computeImpactBtn').disabled = false;
+            } catch (error) {
+                showStatus('zonesStatus', 'error', `Error: ${error.message}`);
+                console.error(error);
+            }
+        }
+
+        // Step 4: Compute impact
+        async function computeImpact() {
+            try {
+                const lossPct = parseFloat(document.getElementById('lossPct').value) / 100;
+                const minWater = parseFloat(document.getElementById('minWater').value);
+                
+                showStatus('impactStatus', 'info', 'Computing property loss...');
+
+                const response = await fetch(`${API_URL}/api/v1/phenomena/${phenomenonId}/impact`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        scenario_params: {
+                            loss_percent: lossPct,
+                            min_water_level: minWater
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+
+                const result = await response.json();
+                impactMetrics = result.impact_metrics;
+                
+                showStatus('impactStatus', 'success', 
+                    `Computed impact for ${impactMetrics.n_scenarios} scenarios`);
+                
+                // Show visualization section
+                document.getElementById('visualizationSection').style.display = 'block';
+                document.getElementById('statsContainer').style.display = 'block';
+                
+                // Auto-visualize first scenario
+                visualizeGeoJSON();
+            } catch (error) {
+                showStatus('impactStatus', 'error', `Error: ${error.message}`);
+                console.error(error);
+            }
+        }
+
+        // Step 5: Visualize GeoJSON
+        async function visualizeGeoJSON() {
+            try {
+                const response = await fetch(
+                    `${API_URL}/api/v1/phenomena/${phenomenonId}/geojson?scenario=${currentScenario}`
+                );
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                currentGeoJSON = await response.json();
+                
+                // Remove existing layer
+                if (geoJSONLayer) {
+                    map.removeLayer(geoJSONLayer);
+                }
+
+                // Add new GeoJSON layer
+                geoJSONLayer = L.geoJSON(currentGeoJSON, {
+                    pointToLayer: (feature, latlng) => {
+                        const props = feature.properties;
+                        const isFlooded = props.zone > 0;
+                        const impact = props[`impact_${currentScenario}`] || 0;
+                        
+                        // Color based on impact
+                        let color = '#2ecc71'; // Green - not flooded
+                        if (isFlooded) {
+                            color = impact > 5 ? '#e74c3c' : '#f39c12'; // Red or Orange
+                        }
+
+                        return L.circleMarker(latlng, {
+                            radius: 8,
+                            fillColor: color,
+                            color: '#333',
+                            weight: 2,
+                            opacity: 1,
+                            fillOpacity: 0.7
+                        });
+                    },
+                    onEachFeature: (feature, layer) => {
+                        const props = feature.properties;
+                        const popup = `
+                            <strong>Parcel: ${props.id}</strong><br>
+                            Elevation: ${props.elevations.toFixed(1)} ft<br>
+                            Land Value: $${props.land_values.toLocaleString()}<br>
+                            Building Value: $${props.building_values.toLocaleString()}<br>
+                            Zone: ${props.zone || 'Not flooded'}<br>
+                            Impact: ${(props[`impact_${currentScenario}`] || 0).toFixed(2)}
+                        `;
+                        layer.bindPopup(popup);
+                    }
+                }).addTo(map);
+
+                // Fit map to bounds
+                if (currentGeoJSON.features.length > 0) {
+                    map.fitBounds(geoJSONLayer.getBounds(), {padding: [50, 50]});
+                }
+
+                // Update stats
+                updateStats();
+            } catch (error) {
+                console.error('Visualization error:', error);
+                alert(`Failed to visualize: ${error.message}`);
+            }
+        }
+
+        // Update scenario
+        function updateScenario(value) {
+            currentScenario = parseInt(value);
+            document.getElementById('scenarioValue').textContent = value;
+            updateStats();
+        }
+
+        // Update statistics display
+        function updateStats() {
+            if (!impactMetrics) return;
+
+            const minWater = parseFloat(document.getElementById('minWater').value);
+            const waterLevel = minWater + currentScenario;
+            const affected = impactMetrics.affected_parcels[currentScenario] || 0;
+            const loss = impactMetrics.total_property_loss[currentScenario] || 0;
+
+            document.getElementById('statWaterLevel').textContent = `${waterLevel} ft`;
+            document.getElementById('statAffected').textContent = affected;
+            document.getElementById('statLoss').textContent = `$${loss.toLocaleString(undefined, {maximumFractionDigits: 0})}`;
+        }
+
+        // Helper to show status messages
+        function showStatus(elementId, type, message) {
+            const el = document.getElementById(elementId);
+            el.className = `status ${type}`;
+            el.textContent = message;
+        }
+
+        // Initialize on load
+        window.onload = () => {
+            initMap();
+            showStatus('dataStatus', 'info', 'Ready to load test data');
+        };
+    </script>
+</body>
+</html>
+
