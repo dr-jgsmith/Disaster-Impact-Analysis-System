@@ -340,7 +340,7 @@ class FloodEvent(SpatialEvent):
 # ============================================================================
 
 
-def build_flood_model_from_data(
+def build_flood_event_from_data(
     data: pd.DataFrame,
     lat_field: str = "LAT",
     lon_field: str = "LON",
