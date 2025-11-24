@@ -1,5 +1,5 @@
 """
-In-memory storage for phenomena.
+In-memory storage for sp_events.
 
 This module provides simple in-memory storage for development and testing.
 In production, this could be replaced with Redis, PostgreSQL, or other backends.
@@ -9,138 +9,138 @@ import uuid
 from datetime import datetime
 from typing import Dict, List, Optional
 
-from src.core.base.phenomenon import SpatialPhenomenon
+from src.core.base.sp_event import SpatialEvent
 
 
-class PhenomenonStorage:
+class EventStorage:
     """
-    In-memory storage for spatial phenomena.
+    In-memory storage for spatial sp_events.
     
-    Stores phenomenon instances by ID for the duration of the application.
+    Stores sp_event instances by ID for the duration of the application.
     Thread-safe for single-process deployment.
     """
     
     def __init__(self):
         """Initialize storage."""
-        self._phenomena: Dict[str, Dict] = {}
+        self._sp_events: Dict[str, Dict] = {}
         self._lock = None  # Could add threading.Lock() for thread safety
     
     def create(
         self,
-        phenomenon: SpatialPhenomenon,
-        phenomenon_type: str,
+        sp_event: SpatialEvent,
+        event_type: str,
     ) -> str:
         """
-        Store a new phenomenon.
+        Store a new sp_event.
         
         Args:
-            phenomenon: Phenomenon instance
-            phenomenon_type: Type identifier
+            sp_event: Event instance
+            event_type: Type identifier
         
         Returns:
-            Generated phenomenon ID
+            Generated sp_event ID
         """
         # Generate unique ID
-        phenomenon_id = f"{phenomenon_type}_{uuid.uuid4().hex[:8]}"
+        event_id = f"{event_type}_{uuid.uuid4().hex[:8]}"
         
-        # Store phenomenon with metadata
-        self._phenomena[phenomenon_id] = {
-            "phenomenon": phenomenon,
-            "phenomenon_type": phenomenon_type,
+        # Store sp_event with metadata
+        self._sp_events[event_id] = {
+            "sp_event": sp_event,
+            "event_type": event_type,
             "created_at": datetime.utcnow(),
             "status": "ready",
         }
         
-        return phenomenon_id
+        return event_id
     
-    def get(self, phenomenon_id: str) -> Optional[Dict]:
+    def get(self, event_id: str) -> Optional[Dict]:
         """
-        Retrieve phenomenon by ID.
+        Retrieve sp_event by ID.
         
         Args:
-            phenomenon_id: Phenomenon identifier
+            event_id: Event identifier
         
         Returns:
-            Phenomenon data dict or None if not found
+            Event data dict or None if not found
         """
-        return self._phenomena.get(phenomenon_id)
+        return self._sp_events.get(event_id)
     
-    def get_phenomenon(self, phenomenon_id: str) -> Optional[SpatialPhenomenon]:
+    def get_sp_event(self, event_id: str) -> Optional[SpatialEvent]:
         """
-        Get just the phenomenon instance.
+        Get just the sp_event instance.
         
         Args:
-            phenomenon_id: Phenomenon identifier
+            event_id: Event identifier
         
         Returns:
-            SpatialPhenomenon instance or None
+            SpatialEvent instance or None
         """
-        data = self.get(phenomenon_id)
-        return data["phenomenon"] if data else None
+        data = self.get(event_id)
+        return data["sp_event"] if data else None
     
-    def update_status(self, phenomenon_id: str, status: str) -> bool:
+    def update_status(self, event_id: str, status: str) -> bool:
         """
-        Update phenomenon status.
+        Update sp_event status.
         
         Args:
-            phenomenon_id: Phenomenon identifier
+            event_id: Event identifier
             status: New status
         
         Returns:
             True if updated, False if not found
         """
-        if phenomenon_id in self._phenomena:
-            self._phenomena[phenomenon_id]["status"] = status
+        if event_id in self._sp_events:
+            self._sp_events[event_id]["status"] = status
             return True
         return False
     
-    def delete(self, phenomenon_id: str) -> bool:
+    def delete(self, event_id: str) -> bool:
         """
-        Delete phenomenon.
+        Delete sp_event.
         
         Args:
-            phenomenon_id: Phenomenon identifier
+            event_id: Event identifier
         
         Returns:
             True if deleted, False if not found
         """
-        if phenomenon_id in self._phenomena:
-            del self._phenomena[phenomenon_id]
+        if event_id in self._sp_events:
+            del self._sp_events[event_id]
             return True
         return False
     
     def list_all(self, skip: int = 0, limit: int = 100) -> List[Dict]:
         """
-        List all phenomena with pagination.
+        List all sp_events with pagination.
         
         Args:
             skip: Number of records to skip
             limit: Maximum number of records to return
         
         Returns:
-            List of phenomenon data dicts
+            List of sp_event data dicts
         """
-        all_phenomena = list(self._phenomena.items())
-        paginated = all_phenomena[skip : skip + limit]
+        all_sp_events = list(self._sp_events.items())
+        paginated = all_sp_events[skip : skip + limit]
         
         return [
             {
-                "id": phenom_id,
+                "id": event_id,
                 **data,
             }
-            for phenom_id, data in paginated
+            for event_id, data in paginated
         ]
     
     def count(self) -> int:
         """
-        Get total count of phenomena.
+        Get total count of sp_events.
         
         Returns:
-            Number of stored phenomena
+            Number of stored sp_events
         """
-        return len(self._phenomena)
+        return len(self._sp_events)
     
     def clear(self) -> None:
-        """Clear all phenomena (for testing)."""
-        self._phenomena.clear()
+        """Clear all sp_events (for testing)."""
+        self._sp_events.clear()
 

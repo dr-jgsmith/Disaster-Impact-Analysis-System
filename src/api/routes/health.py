@@ -28,14 +28,14 @@ async def api_info():
     """
     API information endpoint.
     
-    Returns API version, capabilities, and supported phenomena types.
+    Returns API version, capabilities, and supported sp_events types.
     """
     return {
         "name": "DIAS - Disaster Impact Analysis System",
         "version": "2.0.0",
-        "description": "Multi-phenomenon spatial analysis and visualization API",
+        "description": "Multi-sp_event spatial analysis and visualization API",
         "capabilities": {
-            "phenomena_types": ["flood", "contagion", "supply_chain"],
+            "sp_events_types": ["flood", "contagion", "supply_chain"],
             "visualization": ["geojson", "summary_statistics"],
             "computation": ["zones", "impacts"],
             "export": ["geojson", "csv", "dataframe"],

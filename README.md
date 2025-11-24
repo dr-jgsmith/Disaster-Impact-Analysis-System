@@ -19,17 +19,22 @@ The Disaster Impact Analysis System (DIAS) is a modern, containerized service fo
 git clone https://github.com/dr-jgsmith/Disaster-Impact-Analysis-System
 cd Disaster-Impact-Analysis-System
 
-# 2. Set up environment variables
-cp .env.example .env
-# Edit .env with your configuration
+# 2. Set up environment variables (optional)
+cp docker/env.example .env
+# Edit .env with your configuration if needed
 
-# 3. Start the service
-cd docker
-docker-compose up -d
+# 3. Build and start the service
+docker-compose up --build
 
 # 4. Verify service is running
-curl http://localhost:8000/api/v1/health
+curl http://localhost:8000/health
+
+# 5. Access API documentation
+# Swagger UI: http://localhost:8000/docs
+# ReDoc: http://localhost:8000/redoc
 ```
+
+The API will be available at http://localhost:8000 with interactive documentation.
 
 ## Architecture
 

@@ -1,43 +1,43 @@
 """
-Generic GeoJSON conversion for spatial phenomena.
+Generic GeoJSON conversion for spatial sp_events.
 
-This module provides phenomenon-agnostic GeoJSON conversion, enabling
-visualization of any spatial phenomenon (floods, contagion, supply-chain, etc.)
+This module provides sp_event-agnostic GeoJSON conversion, enabling
+visualization of any spatial sp_event (floods, contagion, supply-chain, etc.)
 using standard GIS tools and web mapping libraries like Leaflet.js.
 """
 
 from typing import Dict, Any, Optional, List
 import numpy as np
 
-from src.core.base.phenomenon import SpatialPhenomenon
+from src.core.base.sp_event import SpatialEvent
 
 
-def phenomenon_to_geojson(
-    phenomenon: SpatialPhenomenon,
+def sp_event_to_geojson(
+    sp_event: SpatialEvent,
     include_zones: bool = True,
     zone_index: Optional[int] = None,
     include_attributes: bool = True,
 ) -> Dict[str, Any]:
     """
-    Convert any spatial phenomenon to GeoJSON FeatureCollection.
+    Convert any spatial sp_event to GeoJSON FeatureCollection.
     
-    This function works with ANY phenomenon type (flood, contagion, supply-chain)
+    This function works with ANY sp_event type (flood, contagion, supply-chain)
     and produces standard GeoJSON that can be visualized in Leaflet, QGIS, etc.
     
     Args:
-        phenomenon: Any SpatialPhenomenon instance
+        sp_event: Any SpatialEvent instance
         include_zones: Include zone data in properties
         zone_index: Specific zone index to include (None = all zones)
-        include_attributes: Include phenomenon attributes in properties
+        include_attributes: Include sp_event attributes in properties
     
     Returns:
         GeoJSON FeatureCollection with points for each entity
     
     Example:
-        >>> from src.core.phenomena.flood import build_flood_model_from_data
+        >>> from src.core.sp_events.flood import build_flood_model_from_data
         >>> flood = build_flood_model_from_data(data)
         >>> flood.compute_zones({"min_water_level": 3, "max_water_level": 14})
-        >>> geojson = phenomenon_to_geojson(flood)
+        >>> geojson = sp_event_to_geojson(flood)
         >>> # Save to file
         >>> import json
         >>> with open("flood_map.geojson", "w") as f:
@@ -45,38 +45,38 @@ def phenomenon_to_geojson(
     """
     features = []
     
-    for i, entity_id in enumerate(phenomenon.entity_ids):
+    for i, entity_id in enumerate(sp_event.entity_ids):
         # Create point geometry
         feature = {
             "type": "Feature",
             "geometry": {
                 "type": "Point",
                 "coordinates": [
-                    float(phenomenon.coordinates[i, 1]),  # lon (x)
-                    float(phenomenon.coordinates[i, 0]),  # lat (y)
+                    float(sp_event.coordinates[i, 1]),  # lon (x)
+                    float(sp_event.coordinates[i, 0]),  # lat (y)
                 ]
             },
             "properties": {
                 "id": entity_id,
-                "phenomenon_type": phenomenon.get_phenomenon_type(),
+                "event_type": sp_event.get_event_type(),
                 "entity_index": i,
             }
         }
         
-        # Add phenomenon attributes
+        # Add sp_event attributes
         if include_attributes:
-            for attr_name, attr_values in phenomenon.attributes.items():
+            for attr_name, attr_values in sp_event.attributes.items():
                 feature["properties"][attr_name] = float(attr_values[i])
         
         # Add zone data if requested
-        if include_zones and phenomenon.zones:
+        if include_zones and sp_event.zones:
             if zone_index is not None:
                 # Single zone
-                if zone_index < len(phenomenon.zones):
-                    feature["properties"]["zone"] = int(phenomenon.zones[zone_index][i])
+                if zone_index < len(sp_event.zones):
+                    feature["properties"]["zone"] = int(sp_event.zones[zone_index][i])
             else:
                 # All zones
-                for z_idx, zone in enumerate(phenomenon.zones):
+                for z_idx, zone in enumerate(sp_event.zones):
                     feature["properties"][f"zone_{z_idx}"] = int(zone[i])
         
         features.append(feature)
@@ -85,23 +85,23 @@ def phenomenon_to_geojson(
     geojson = {
         "type": "FeatureCollection",
         "features": features,
-        "metadata": phenomenon.to_dict(),
+        "metadata": sp_event.to_dict(),
     }
     
     return geojson
 
 
-def phenomenon_to_geojson_with_impacts(
-    phenomenon: SpatialPhenomenon,
+def sp_event_to_geojson_with_impacts(
+    sp_event: SpatialEvent,
     zone_index: Optional[int] = None,
 ) -> Dict[str, Any]:
     """
-    Convert phenomenon to GeoJSON including impact metrics.
+    Convert sp_event to GeoJSON including impact metrics.
     
-    Similar to phenomenon_to_geojson but includes impact data if available.
+    Similar to sp_event_to_geojson but includes impact data if available.
     
     Args:
-        phenomenon: Any SpatialPhenomenon instance with computed impacts
+        sp_event: Any SpatialEvent instance with computed impacts
         zone_index: Specific zone/scenario index to include
     
     Returns:
@@ -109,23 +109,23 @@ def phenomenon_to_geojson_with_impacts(
     
     Example:
         >>> flood.compute_impact(flood.zones, {"loss_percent": 0.8})
-        >>> geojson = phenomenon_to_geojson_with_impacts(flood, zone_index=0)
+        >>> geojson = sp_event_to_geojson_with_impacts(flood, zone_index=0)
     """
     # Get base GeoJSON
-    geojson = phenomenon_to_geojson(
-        phenomenon,
+    geojson = sp_event_to_geojson(
+        sp_event,
         include_zones=True,
         zone_index=zone_index,
         include_attributes=True,
     )
     
     # Add impact metrics if available
-    if phenomenon.impact_metrics:
-        geojson["metadata"]["impact_metrics"] = phenomenon.impact_metrics
+    if sp_event.impact_metrics:
+        geojson["metadata"]["impact_metrics"] = sp_event.impact_metrics
         
         # Add per-entity impact data if available
-        if "impact_intensities" in phenomenon.impact_metrics:
-            impact_intensities = phenomenon.impact_metrics["impact_intensities"]
+        if "impact_intensities" in sp_event.impact_metrics:
+            impact_intensities = sp_event.impact_metrics["impact_intensities"]
             
             for i, feature in enumerate(geojson["features"]):
                 if zone_index is not None and zone_index < len(impact_intensities):
@@ -142,14 +142,14 @@ def phenomenon_to_geojson_with_impacts(
 
 
 def get_zone_bounds(
-    phenomenon: SpatialPhenomenon,
+    sp_event: SpatialEvent,
     zone_index: int,
 ) -> Optional[Dict[str, float]]:
     """
     Get bounding box for a specific zone.
     
     Args:
-        phenomenon: Phenomenon with computed zones
+        sp_event: Event with computed zones
         zone_index: Zone index to get bounds for
     
     Returns:
@@ -161,16 +161,16 @@ def get_zone_bounds(
         >>> bounds["min_lat"]
         29.76
     """
-    if not phenomenon.zones or zone_index >= len(phenomenon.zones):
+    if not sp_event.zones or zone_index >= len(sp_event.zones):
         return None
     
-    zone = phenomenon.zones[zone_index]
+    zone = sp_event.zones[zone_index]
     affected_mask = zone > 0
     
     if not np.any(affected_mask):
         return None
     
-    affected_coords = phenomenon.coordinates[affected_mask]
+    affected_coords = sp_event.coordinates[affected_mask]
     
     return {
         "min_lat": float(affected_coords[:, 0].min()),
@@ -181,14 +181,14 @@ def get_zone_bounds(
 
 
 def get_zone_statistics(
-    phenomenon: SpatialPhenomenon,
+    sp_event: SpatialEvent,
     zone_index: int,
 ) -> Optional[Dict[str, Any]]:
     """
     Get statistics for a specific zone.
     
     Args:
-        phenomenon: Phenomenon with computed zones
+        sp_event: Event with computed zones
         zone_index: Zone index to get statistics for
     
     Returns:
@@ -199,10 +199,10 @@ def get_zone_statistics(
         >>> stats["n_entities"]
         25
     """
-    if not phenomenon.zones or zone_index >= len(phenomenon.zones):
+    if not sp_event.zones or zone_index >= len(sp_event.zones):
         return None
     
-    zone = phenomenon.zones[zone_index]
+    zone = sp_event.zones[zone_index]
     affected_mask = zone > 0
     n_affected = int(np.sum(affected_mask))
     
@@ -217,7 +217,7 @@ def get_zone_statistics(
     }
     
     # Add attribute statistics for affected entities
-    for attr_name, attr_values in phenomenon.attributes.items():
+    for attr_name, attr_values in sp_event.attributes.items():
         affected_values = attr_values[affected_mask]
         stats[f"{attr_name}_affected"] = {
             "min": float(affected_values.min()),
@@ -230,7 +230,7 @@ def get_zone_statistics(
 
 
 def export_all_scenarios(
-    phenomenon: SpatialPhenomenon,
+    sp_event: SpatialEvent,
     output_dir: str,
     prefix: str = "scenario",
 ) -> List[str]:
@@ -238,7 +238,7 @@ def export_all_scenarios(
     Export all scenario zones as separate GeoJSON files.
     
     Args:
-        phenomenon: Phenomenon with computed zones
+        sp_event: Event with computed zones
         output_dir: Directory to save GeoJSON files
         prefix: Filename prefix for scenarios
     
@@ -253,15 +253,15 @@ def export_all_scenarios(
     import json
     import os
     
-    if not phenomenon.zones:
+    if not sp_event.zones:
         return []
     
     os.makedirs(output_dir, exist_ok=True)
     created_files = []
     
-    for i in range(len(phenomenon.zones)):
+    for i in range(len(sp_event.zones)):
         # Generate GeoJSON for this scenario
-        geojson = phenomenon_to_geojson_with_impacts(phenomenon, zone_index=i)
+        geojson = sp_event_to_geojson_with_impacts(sp_event, zone_index=i)
         
         # Create filename
         filename = os.path.join(output_dir, f"{prefix}_{i}.geojson")

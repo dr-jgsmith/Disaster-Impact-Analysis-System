@@ -1,7 +1,7 @@
 """
-Abstract base class for spatial phenomena.
+Abstract base class for spatial events.
 
-This module defines the interface that all spatial phenomena must implement,
+This module defines the interface that all spatial events must implement,
 enabling generic visualization, analysis, and API endpoints.
 """
 
@@ -11,28 +11,28 @@ import numpy as np
 import pandas as pd
 
 
-class SpatialPhenomenon(ABC):
+class SpatialEvent(ABC):
     """
-    Abstract base class for spatial phenomena.
+    Abstract base class for spatial events.
     
-    This class defines the interface for any spatial phenomenon that
+    This class defines the interface for any spatial event that
     propagates through a network (floods, contagion, supply-chain
     disruptions, social movements, etc.).
     
     Subclasses must implement:
     - compute_zones(): Identify affected zones/clusters
-    - compute_impact(): Calculate phenomenon-specific impacts
-    - get_phenomenon_type(): Return type identifier
+    - compute_impact(): Calculate event-specific impacts
+    - get_event_type(): Return type identifier
     
     Example:
-        >>> class FloodPhenomenon(SpatialPhenomenon):
+        >>> class FloodEvent(SpatialEvent):
         ...     def compute_zones(self, params):
         ...         # Flood-specific zone computation
         ...         pass
         ...     def compute_impact(self, zones, params):
         ...         # Property value loss calculation
         ...         pass
-        ...     def get_phenomenon_type(self):
+        ...     def get_event_type(self):
         ...         return "flood"
     """
     
@@ -44,14 +44,14 @@ class SpatialPhenomenon(ABC):
         entity_attributes: Dict[str, np.ndarray],
     ):
         """
-        Initialize spatial phenomenon.
+        Initialize spatial event.
         
         Args:
             entity_ids: Unique identifiers for spatial entities
                        (e.g., parcel IDs, person IDs, facility IDs)
             coordinates: Coordinate array of shape (n, 2) with [lat, lon]
             adjacency_matrix: Spatial connectivity matrix of shape (n, n)
-            entity_attributes: Phenomenon-specific attributes as dict of arrays
+            entity_attributes: Event-specific attributes as dict of arrays
                               (e.g., {"elevations": [...], "values": [...]})
         
         Example:
@@ -59,7 +59,7 @@ class SpatialPhenomenon(ABC):
             >>> coords = np.array([[29.76, -95.37], [29.77, -95.38], ...])
             >>> adjacency = np.array([[1, 1, 0], [1, 1, 1], [0, 1, 1]])
             >>> attributes = {"elevations": np.array([5.0, 10.0, 8.0])}
-            >>> phenomenon = ConcretePhenomenon(
+            >>> sp_event = ConcreteEvent(
             ...     entity_ids, coords, adjacency, attributes
             ... )
         """
@@ -75,14 +75,14 @@ class SpatialPhenomenon(ABC):
     @abstractmethod
     def compute_zones(self, scenario_params: Dict[str, Any]) -> List[np.ndarray]:
         """
-        Compute affected zones based on phenomenon-specific rules.
+        Compute affected zones based on event-specific rules.
         
         For floods: Connected areas below water level
         For contagion: Connected infected populations over time
         For supply-chain: Connected disrupted facilities
         
         Args:
-            scenario_params: Phenomenon-specific parameters
+            scenario_params: Event-specific parameters
                            For flood: {"min_water_level": 3, "max_water_level": 14}
                            For contagion: {"transmission_rate": 0.3, "time_steps": 30}
         
@@ -91,7 +91,7 @@ class SpatialPhenomenon(ABC):
             Each array contains zone IDs (0 = unaffected, 1+ = zone ID).
         
         Example:
-            >>> zones = phenomenon.compute_zones({"param1": value1})
+            >>> zones = sp_event.compute_zones({"param1": value1})
             >>> len(zones)  # Number of scenarios
             10
             >>> zones[0].shape  # Shape matches number of entities
@@ -106,7 +106,7 @@ class SpatialPhenomenon(ABC):
         scenario_params: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
-        Calculate impact based on phenomenon-specific metrics.
+        Calculate impact based on event-specific metrics.
         
         For floods: Property value loss
         For contagion: Infection rates, health outcomes, economic cost
@@ -114,50 +114,50 @@ class SpatialPhenomenon(ABC):
         
         Args:
             zones: Zone arrays from compute_zones()
-            scenario_params: Phenomenon-specific impact parameters
+            scenario_params: Event-specific impact parameters
                            For flood: {"loss_percent": 0.8}
                            For contagion: {"cost_per_case": 5000}
         
         Returns:
-            Dictionary with impact metrics (phenomenon-specific keys)
+            Dictionary with impact metrics (event-specific keys)
         
         Example:
-            >>> impact = phenomenon.compute_impact(zones, {"param": value})
+            >>> impact = sp_event.compute_impact(zones, {"param": value})
             >>> impact["total_loss"]
             1250000.0
         """
         pass
     
     @abstractmethod
-    def get_phenomenon_type(self) -> str:
+    def get_event_type(self) -> str:
         """
-        Return phenomenon type identifier.
+        Return event type identifier.
         
         Returns:
             String identifier (e.g., "flood", "contagion", "supply_chain")
         
         Example:
-            >>> phenomenon.get_phenomenon_type()
+            >>> sp_event.get_event_type()
             'flood'
         """
         pass
     
     def to_dict(self) -> Dict[str, Any]:
         """
-        Export phenomenon state to dictionary.
+        Export event state to dictionary.
         
         Returns:
-            Dictionary with phenomenon metadata
+            Dictionary with event metadata
         
         Example:
-            >>> data = phenomenon.to_dict()
-            >>> data["phenomenon_type"]
+            >>> data = sp_event.to_dict()
+            >>> data["event_type"]
             'flood'
             >>> data["n_entities"]
             100
         """
         return {
-            "phenomenon_type": self.get_phenomenon_type(),
+            "event_type": self.get_event_type(),
             "n_entities": len(self.entity_ids),
             "has_zones": self.zones is not None,
             "has_impacts": self.impact_metrics is not None,
@@ -166,13 +166,13 @@ class SpatialPhenomenon(ABC):
     
     def to_dataframe(self) -> pd.DataFrame:
         """
-        Export phenomenon data to DataFrame.
+        Export event data to DataFrame.
         
         Returns:
             DataFrame with entity data, attributes, zones, and impacts
         
         Example:
-            >>> df = phenomenon.to_dataframe()
+            >>> df = sp_event.to_dataframe()
             >>> df.columns
             ['entity_id', 'lat', 'lon', 'attr1', 'zone_0', ...]
         """
@@ -182,7 +182,7 @@ class SpatialPhenomenon(ABC):
             "lon": self.coordinates[:, 1],
         }
         
-        # Add all phenomenon attributes
+        # Add all event attributes
         for attr_name, attr_values in self.attributes.items():
             data[attr_name] = attr_values
         
@@ -195,18 +195,18 @@ class SpatialPhenomenon(ABC):
     
     def get_summary(self) -> Dict[str, Any]:
         """
-        Get summary statistics for phenomenon.
+        Get summary statistics for event.
         
         Returns:
             Dictionary with summary statistics
         
         Example:
-            >>> summary = phenomenon.get_summary()
+            >>> summary = sp_event.get_summary()
             >>> summary["n_entities"]
             100
         """
         summary = {
-            "phenomenon_type": self.get_phenomenon_type(),
+            "event_type": self.get_event_type(),
             "n_entities": len(self.entity_ids),
             "n_zones": len(self.zones) if self.zones else 0,
             "coordinate_bounds": self._get_coordinate_bounds(),
@@ -239,7 +239,7 @@ class SpatialPhenomenon(ABC):
         """String representation."""
         return (
             f"{self.__class__.__name__}("
-            f"type={self.get_phenomenon_type()}, "
+            f"type={self.get_event_type()}, "
             f"entities={len(self.entity_ids)}, "
             f"zones={len(self.zones) if self.zones else 0})"
         )

@@ -1,0 +1,75 @@
+# Docker Compose configuration for DIAS
+version: '3.8'
+
+services:
+  # ============================================================================
+  # DIAS API Service
+  # ============================================================================
+  dias-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: dias:2.0.0
+    container_name: dias-api
+    ports:
+      - "8000:8000"
+    environment:
+      # Application
+      - APP_ENV=production
+      - LOG_LEVEL=INFO
+      
+      # API Configuration
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - API_WORKERS=4
+      
+      # JAX Configuration
+      - JAX_PLATFORM_NAME=cpu
+      - JAX_ENABLE_X64=True
+      
+      # Storage (for future use)
+      - STORAGE_PATH=/app/data
+    volumes:
+      # Mount data directory for persistence
+      - dias-data:/app/data
+      # Mount logs directory
+      - dias-logs:/app/logs
+      # Mount source code for development (comment out in production)
+      # - ./src:/app/src
+    networks:
+      - dias-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+
+# ============================================================================
+# Volumes
+# ============================================================================
+volumes:
+  dias-data:
+    driver: local
+    name: dias-data
+  dias-logs:
+    driver: local
+    name: dias-logs
+
+# ============================================================================
+# Networks
+# ============================================================================
+networks:
+  dias-network:
+    driver: bridge
+    name: dias-network
+

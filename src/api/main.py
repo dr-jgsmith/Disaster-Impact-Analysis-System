@@ -2,7 +2,7 @@
 FastAPI main application for DIAS.
 
 This module provides the REST API for the Disaster Impact Analysis System,
-supporting multi-phenomenon spatial analysis and visualization.
+supporting multi-sp_event spatial analysis and visualization.
 """
 
 from contextlib import asynccontextmanager
@@ -11,8 +11,8 @@ from typing import Dict
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.api.routes import health, phenomena
-from src.api.storage import PhenomenonStorage
+from src.api.routes import health, sp_events
+from src.api.storage import EventStorage
 
 
 # Application state
@@ -28,8 +28,8 @@ async def lifespan(app: FastAPI):
     cleans up on shutdown.
     """
     # Startup
-    app_state["storage"] = PhenomenonStorage()
-    print("DIAS API started - Phenomenon storage initialized")
+    app_state["storage"] = EventStorage()
+    print("DIAS API started - Event storage initialized")
     
     yield
     
@@ -42,7 +42,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="DIAS - Disaster Impact Analysis System",
     description=(
-        "Multi-phenomenon spatial analysis and visualization API. "
+        "Multi-sp_event spatial analysis and visualization API. "
         "Supports floods, contagion, supply-chain disruptions, and more."
     ),
     version="2.0.0",
@@ -75,9 +75,9 @@ app.add_middleware(
 # Include routers
 app.include_router(health.router, tags=["health"])
 app.include_router(
-    phenomena.router,
+    sp_events.router,
     prefix="/api/v1",
-    tags=["phenomena"],
+    tags=["sp_events"],
 )
 
 
@@ -100,7 +100,7 @@ async def root():
     }
 
 
-def get_storage() -> PhenomenonStorage:
-    """Get the global phenomenon storage instance."""
+def get_storage() -> EventStorage:
+    """Get the global sp_event storage instance."""
     return app_state["storage"]
 

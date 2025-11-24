@@ -1,20 +1,20 @@
 """
-DIAS Core Module - Multi-phenomenon spatial analysis.
+DIAS Core Module - Multi-event spatial analysis.
 
-This module provides the core functionality for analyzing spatial phenomena
+This module provides the core functionality for analyzing spatial events
 including abstract base classes, concrete implementations, and utilities.
 """
 
 # Base abstractions
-from src.core.base.phenomenon import SpatialPhenomenon
+from src.core.base.sp_event import SpatialEvent
 
-# Concrete phenomena implementations
-from src.core.phenomena.flood import FloodPhenomenon, build_flood_model_from_data
+# Concrete event implementations
+from src.core.sp_events.flood_event import FloodEvent, build_flood_event_from_data
 
 # Visualization utilities
 from src.core.visualization.geojson import (
-    phenomenon_to_geojson,
-    phenomenon_to_geojson_with_impacts,
+    sp_event_to_geojson,
+    sp_event_to_geojson_with_impacts,
 )
 
 # JAX operations and legacy model (for backward compatibility)
@@ -23,13 +23,13 @@ from src.core import model
 
 __all__ = [
     # Base abstractions
-    "SpatialPhenomenon",
-    # Flood phenomenon
-    "FloodPhenomenon",
-    "build_flood_model_from_data",
+    "SpatialEvent",
+    # Flood event
+    "FloodEvent",
+    "build_flood_event_from_data",
     # Visualization
-    "phenomenon_to_geojson",
-    "phenomenon_to_geojson_with_impacts",
+    "sp_event_to_geojson",
+    "sp_event_to_geojson_with_impacts",
     # Utilities
     "jax_ops",
     "model",

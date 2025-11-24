@@ -2,7 +2,7 @@
 Integration tests for DIAS REST API.
 
 These tests verify the complete API workflow including
-phenomenon creation, computation, and visualization.
+sp_event creation, computation, and visualization.
 """
 
 import pytest
@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 import numpy as np
 
 from src.api.main import app
-from src.api.storage import PhenomenonStorage
+from src.api.storage import EventStorage
 
 
 @pytest.fixture
@@ -23,7 +23,7 @@ def client():
 def sample_flood_data():
     """Create sample flood data for testing."""
     return {
-        "phenomenon_type": "flood",
+        "event_type": "flood",
         "data": {
             "entity_ids": ["P001", "P002", "P003", "P004"],
             "coordinates": [
@@ -72,7 +72,7 @@ class TestHealthEndpoints:
         assert "DIAS" in data["name"]
         assert data["version"] == "2.0.0"
         assert "capabilities" in data
-        assert "flood" in data["capabilities"]["phenomena_types"]
+        assert "flood" in data["capabilities"]["sp_events_types"]
     
     def test_root_endpoint(self, client):
         """Test root endpoint."""
@@ -84,74 +84,74 @@ class TestHealthEndpoints:
         assert "documentation" in data
 
 
-class TestPhenomenonCRUD:
-    """Test phenomenon CRUD operations."""
+class TestEventCRUD:
+    """Test sp_event CRUD operations."""
     
-    def test_create_phenomenon(self, client, sample_flood_data):
-        """Test creating a phenomenon."""
-        response = client.post("/api/v1/phenomena", json=sample_flood_data)
+    def test_create_sp_event(self, client, sample_flood_data):
+        """Test creating a sp_event."""
+        response = client.post("/api/v1/sp_events", json=sample_flood_data)
         assert response.status_code == 201
         
         data = response.json()
         assert "id" in data
-        assert data["phenomenon_type"] == "flood"
+        assert data["event_type"] == "flood"
         assert data["n_entities"] == 4
         assert data["status"] == "ready"
         assert "links" in data
     
-    def test_get_phenomenon(self, client, sample_flood_data):
-        """Test retrieving a phenomenon."""
-        # Create phenomenon
-        create_response = client.post("/api/v1/phenomena", json=sample_flood_data)
-        phenom_id = create_response.json()["id"]
+    def test_get_sp_event(self, client, sample_flood_data):
+        """Test retrieving a sp_event."""
+        # Create sp_event
+        create_response = client.post("/api/v1/sp_events", json=sample_flood_data)
+        event_id = create_response.json()["id"]
         
-        # Get phenomenon
-        response = client.get(f"/api/v1/phenomena/{phenom_id}")
+        # Get sp_event
+        response = client.get(f"/api/v1/sp_events/{event_id}")
         assert response.status_code == 200
         
         data = response.json()
-        assert data["id"] == phenom_id
-        assert data["phenomenon_type"] == "flood"
+        assert data["id"] == event_id
+        assert data["event_type"] == "flood"
         assert data["n_entities"] == 4
         assert data["has_zones"] is False
         assert data["has_impacts"] is False
     
-    def test_get_nonexistent_phenomenon(self, client):
-        """Test retrieving non-existent phenomenon."""
-        response = client.get("/api/v1/phenomena/nonexistent_id")
+    def test_get_nonexistent_sp_event(self, client):
+        """Test retrieving non-existent sp_event."""
+        response = client.get("/api/v1/sp_events/nonexistent_id")
         assert response.status_code == 404
         
         data = response.json()
         assert "error" in data or "detail" in data
     
-    def test_delete_phenomenon(self, client, sample_flood_data):
-        """Test deleting a phenomenon."""
-        # Create phenomenon
-        create_response = client.post("/api/v1/phenomena", json=sample_flood_data)
-        phenom_id = create_response.json()["id"]
+    def test_delete_sp_event(self, client, sample_flood_data):
+        """Test deleting a sp_event."""
+        # Create sp_event
+        create_response = client.post("/api/v1/sp_events", json=sample_flood_data)
+        event_id = create_response.json()["id"]
         
-        # Delete phenomenon
-        response = client.delete(f"/api/v1/phenomena/{phenom_id}")
+        # Delete sp_event
+        response = client.delete(f"/api/v1/sp_events/{event_id}")
         assert response.status_code == 204
         
         # Verify deletion
-        get_response = client.get(f"/api/v1/phenomena/{phenom_id}")
+        get_response = client.get(f"/api/v1/sp_events/{event_id}")
         assert get_response.status_code == 404
     
-    def test_list_phenomena(self, client, sample_flood_data):
-        """Test listing phenomena."""
-        # Create a few phenomena
+    def test_list_sp_events(self, client, sample_flood_data):
+        """Test listing sp_events."""
+        # Create a few sp_events
         for _ in range(3):
-            client.post("/api/v1/phenomena", json=sample_flood_data)
+            client.post("/api/v1/sp_events", json=sample_flood_data)
         
-        # List phenomena
-        response = client.get("/api/v1/phenomena?page=1&page_size=10")
+        # List sp_events
+        response = client.get("/api/v1/sp_events?page=1&page_size=10")
         assert response.status_code == 200
         
         data = response.json()
-        assert "phenomena" in data
+        assert "sp_events" in data
         assert "total" in data
-        assert len(data["phenomena"]) >= 3
+        assert len(data["sp_events"]) >= 3
 
 
 class TestComputation:
@@ -159,9 +159,9 @@ class TestComputation:
     
     def test_compute_zones(self, client, sample_flood_data):
         """Test computing zones."""
-        # Create phenomenon
-        create_response = client.post("/api/v1/phenomena", json=sample_flood_data)
-        phenom_id = create_response.json()["id"]
+        # Create sp_event
+        create_response = client.post("/api/v1/sp_events", json=sample_flood_data)
+        event_id = create_response.json()["id"]
         
         # Compute zones
         zones_request = {
@@ -171,22 +171,22 @@ class TestComputation:
             }
         }
         response = client.post(
-            f"/api/v1/phenomena/{phenom_id}/zones",
+            f"/api/v1/sp_events/{event_id}/zones",
             json=zones_request
         )
         assert response.status_code == 200
         
         data = response.json()
-        assert data["phenomenon_id"] == phenom_id
+        assert data["event_id"] == event_id
         assert data["n_scenarios"] == 6  # 6, 7, 8, 9, 10, 11
         assert data["scenarios_computed"] is True
         assert "computation_time_ms" in data
     
     def test_compute_impact(self, client, sample_flood_data):
         """Test computing impact."""
-        # Create phenomenon
-        create_response = client.post("/api/v1/phenomena", json=sample_flood_data)
-        phenom_id = create_response.json()["id"]
+        # Create sp_event
+        create_response = client.post("/api/v1/sp_events", json=sample_flood_data)
+        event_id = create_response.json()["id"]
         
         # Compute zones first
         zones_request = {
@@ -195,7 +195,7 @@ class TestComputation:
                 "max_water_level": 11.0
             }
         }
-        client.post(f"/api/v1/phenomena/{phenom_id}/zones", json=zones_request)
+        client.post(f"/api/v1/sp_events/{event_id}/zones", json=zones_request)
         
         # Compute impact
         impact_request = {
@@ -205,21 +205,21 @@ class TestComputation:
             }
         }
         response = client.post(
-            f"/api/v1/phenomena/{phenom_id}/impact",
+            f"/api/v1/sp_events/{event_id}/impact",
             json=impact_request
         )
         assert response.status_code == 200
         
         data = response.json()
-        assert data["phenomenon_id"] == phenom_id
+        assert data["event_id"] == event_id
         assert "impact_metrics" in data
         assert "computation_time_ms" in data
     
     def test_compute_impact_without_zones(self, client, sample_flood_data):
         """Test that computing impact without zones fails."""
-        # Create phenomenon
-        create_response = client.post("/api/v1/phenomena", json=sample_flood_data)
-        phenom_id = create_response.json()["id"]
+        # Create sp_event
+        create_response = client.post("/api/v1/sp_events", json=sample_flood_data)
+        event_id = create_response.json()["id"]
         
         # Try to compute impact without zones
         impact_request = {
@@ -228,7 +228,7 @@ class TestComputation:
             }
         }
         response = client.post(
-            f"/api/v1/phenomena/{phenom_id}/impact",
+            f"/api/v1/sp_events/{event_id}/impact",
             json=impact_request
         )
         assert response.status_code == 409  # Conflict
@@ -239,9 +239,9 @@ class TestVisualization:
     
     def test_get_geojson(self, client, sample_flood_data):
         """Test getting GeoJSON representation."""
-        # Create and prepare phenomenon
-        create_response = client.post("/api/v1/phenomena", json=sample_flood_data)
-        phenom_id = create_response.json()["id"]
+        # Create and prepare sp_event
+        create_response = client.post("/api/v1/sp_events", json=sample_flood_data)
+        event_id = create_response.json()["id"]
         
         # Compute zones
         zones_request = {
@@ -250,10 +250,10 @@ class TestVisualization:
                 "max_water_level": 8.0
             }
         }
-        client.post(f"/api/v1/phenomena/{phenom_id}/zones", json=zones_request)
+        client.post(f"/api/v1/sp_events/{event_id}/zones", json=zones_request)
         
         # Get GeoJSON
-        response = client.get(f"/api/v1/phenomena/{phenom_id}/geojson")
+        response = client.get(f"/api/v1/sp_events/{event_id}/geojson")
         assert response.status_code == 200
         
         geojson = response.json()
@@ -264,9 +264,9 @@ class TestVisualization:
     
     def test_get_geojson_specific_scenario(self, client, sample_flood_data):
         """Test getting GeoJSON for specific scenario."""
-        # Create and prepare phenomenon
-        create_response = client.post("/api/v1/phenomena", json=sample_flood_data)
-        phenom_id = create_response.json()["id"]
+        # Create and prepare sp_event
+        create_response = client.post("/api/v1/sp_events", json=sample_flood_data)
+        event_id = create_response.json()["id"]
         
         # Compute zones
         zones_request = {
@@ -275,10 +275,10 @@ class TestVisualization:
                 "max_water_level": 8.0
             }
         }
-        client.post(f"/api/v1/phenomena/{phenom_id}/zones", json=zones_request)
+        client.post(f"/api/v1/sp_events/{event_id}/zones", json=zones_request)
         
         # Get GeoJSON for scenario 1
-        response = client.get(f"/api/v1/phenomena/{phenom_id}/geojson?scenario=1")
+        response = client.get(f"/api/v1/sp_events/{event_id}/geojson?scenario=1")
         assert response.status_code == 200
         
         geojson = response.json()
@@ -287,27 +287,27 @@ class TestVisualization:
         assert "zone" in props or "zone_0" in props
     
     def test_get_summary(self, client, sample_flood_data):
-        """Test getting phenomenon summary."""
-        # Create phenomenon
-        create_response = client.post("/api/v1/phenomena", json=sample_flood_data)
-        phenom_id = create_response.json()["id"]
+        """Test getting sp_event summary."""
+        # Create sp_event
+        create_response = client.post("/api/v1/sp_events", json=sample_flood_data)
+        event_id = create_response.json()["id"]
         
         # Get summary
-        response = client.get(f"/api/v1/phenomena/{phenom_id}/summary")
+        response = client.get(f"/api/v1/sp_events/{event_id}/summary")
         assert response.status_code == 200
         
         data = response.json()
-        assert data["phenomenon_id"] == phenom_id
-        assert data["phenomenon_type"] == "flood"
+        assert data["event_id"] == event_id
+        assert data["event_type"] == "flood"
         assert data["n_entities"] == 4
         assert "coordinate_bounds" in data
         assert "attribute_statistics" in data
     
     def test_get_zone_bounds(self, client, sample_flood_data):
         """Test getting zone bounds."""
-        # Create and prepare phenomenon
-        create_response = client.post("/api/v1/phenomena", json=sample_flood_data)
-        phenom_id = create_response.json()["id"]
+        # Create and prepare sp_event
+        create_response = client.post("/api/v1/sp_events", json=sample_flood_data)
+        event_id = create_response.json()["id"]
         
         # Compute zones
         zones_request = {
@@ -316,21 +316,21 @@ class TestVisualization:
                 "max_water_level": 8.0
             }
         }
-        client.post(f"/api/v1/phenomena/{phenom_id}/zones", json=zones_request)
+        client.post(f"/api/v1/sp_events/{event_id}/zones", json=zones_request)
         
         # Get zone bounds
-        response = client.get(f"/api/v1/phenomena/{phenom_id}/zones/0/bounds")
+        response = client.get(f"/api/v1/sp_events/{event_id}/zones/0/bounds")
         assert response.status_code == 200
         
         data = response.json()
-        assert data["phenomenon_id"] == phenom_id
+        assert data["event_id"] == event_id
         assert data["zone_index"] == 0
     
     def test_get_zone_stats(self, client, sample_flood_data):
         """Test getting zone statistics."""
-        # Create and prepare phenomenon
-        create_response = client.post("/api/v1/phenomena", json=sample_flood_data)
-        phenom_id = create_response.json()["id"]
+        # Create and prepare sp_event
+        create_response = client.post("/api/v1/sp_events", json=sample_flood_data)
+        event_id = create_response.json()["id"]
         
         # Compute zones
         zones_request = {
@@ -339,14 +339,14 @@ class TestVisualization:
                 "max_water_level": 8.0
             }
         }
-        client.post(f"/api/v1/phenomena/{phenom_id}/zones", json=zones_request)
+        client.post(f"/api/v1/sp_events/{event_id}/zones", json=zones_request)
         
         # Get zone stats
-        response = client.get(f"/api/v1/phenomena/{phenom_id}/zones/0/stats")
+        response = client.get(f"/api/v1/sp_events/{event_id}/zones/0/stats")
         assert response.status_code == 200
         
         data = response.json()
-        assert data["phenomenon_id"] == phenom_id
+        assert data["event_id"] == event_id
         assert data["zone_index"] == 0
 
 
@@ -355,13 +355,13 @@ class TestCompleteWorkflow:
     
     def test_full_flood_analysis_workflow(self, client, sample_flood_data):
         """Test complete flood analysis workflow."""
-        # 1. Create phenomenon
-        create_response = client.post("/api/v1/phenomena", json=sample_flood_data)
+        # 1. Create sp_event
+        create_response = client.post("/api/v1/sp_events", json=sample_flood_data)
         assert create_response.status_code == 201
-        phenom_id = create_response.json()["id"]
+        event_id = create_response.json()["id"]
         
         # 2. Verify creation
-        get_response = client.get(f"/api/v1/phenomena/{phenom_id}")
+        get_response = client.get(f"/api/v1/sp_events/{event_id}")
         assert get_response.status_code == 200
         assert get_response.json()["has_zones"] is False
         
@@ -373,7 +373,7 @@ class TestCompleteWorkflow:
             }
         }
         zones_response = client.post(
-            f"/api/v1/phenomena/{phenom_id}/zones",
+            f"/api/v1/sp_events/{event_id}/zones",
             json=zones_request
         )
         assert zones_response.status_code == 200
@@ -387,26 +387,26 @@ class TestCompleteWorkflow:
             }
         }
         impact_response = client.post(
-            f"/api/v1/phenomena/{phenom_id}/impact",
+            f"/api/v1/sp_events/{event_id}/impact",
             json=impact_request
         )
         assert impact_response.status_code == 200
         
         # 5. Get GeoJSON
-        geojson_response = client.get(f"/api/v1/phenomena/{phenom_id}/geojson")
+        geojson_response = client.get(f"/api/v1/sp_events/{event_id}/geojson")
         assert geojson_response.status_code == 200
         geojson = geojson_response.json()
         assert geojson["type"] == "FeatureCollection"
         assert len(geojson["features"]) == 4
         
         # 6. Get summary
-        summary_response = client.get(f"/api/v1/phenomena/{phenom_id}/summary")
+        summary_response = client.get(f"/api/v1/sp_events/{event_id}/summary")
         assert summary_response.status_code == 200
         summary = summary_response.json()
         assert summary["n_entities"] == 4
         assert summary["n_scenarios"] == 6
         
         # 7. Clean up
-        delete_response = client.delete(f"/api/v1/phenomena/{phenom_id}")
+        delete_response = client.delete(f"/api/v1/sp_events/{event_id}")
         assert delete_response.status_code == 204
 

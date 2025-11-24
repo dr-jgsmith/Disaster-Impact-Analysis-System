@@ -5,31 +5,31 @@
 **Good News:** Foundation is solid!
 - ✅ `src/core/jax_ops.py` EXISTS (15.5KB, fully generic)
 - ✅ `src/core/model.py` EXISTS (13.2KB, flood-specific)
-- ✅ All JAX utilities are phenomenon-agnostic
+- ✅ All JAX utilities are event-agnostic
 - ✅ Connectivity operations are reusable
 
-**What Needs Work:** Abstraction layer for multiple phenomena
+**What Needs Work:** Abstraction layer for multiple events
 
 ---
 
 ## Simplified Refactoring Plan
 
 ### PHASE 1: Create Abstract Base (~3 hours)
-**Branch:** `feature/refactor-multi-phenomenon`
+**Branch:** `feature/refactor-multi-event`
 
 #### Task 1.1: Create Abstract Base Class (1 hour)
 **File:** `src/core/base/__init__.py`
-**File:** `src/core/base/phenomenon.py`
+**File:** `src/core/base/event.py`
 
 ```python
-"""Abstract base for spatial phenomena."""
+"""Abstract base for spatial events."""
 
 from abc import ABC, abstractmethod
 from typing import Dict, List, Any, Optional
 import numpy as np
 
-class SpatialPhenomenon(ABC):
-    """Base class for any spatial phenomenon (floods, contagion, supply-chain, etc.)."""
+class SpatialEvent(ABC):
+    """Base class for any spatial event (floods, contagion, supply-chain, etc.)."""
     
     def __init__(
         self,
@@ -47,24 +47,24 @@ class SpatialPhenomenon(ABC):
     
     @abstractmethod
     def compute_zones(self, scenario_params: Dict[str, Any]) -> List[np.ndarray]:
-        """Compute zones based on phenomenon-specific rules."""
+        """Compute zones based on event-specific rules."""
         pass
     
     @abstractmethod
     def compute_impact(self, zones: List[np.ndarray], 
                       scenario_params: Dict[str, Any]) -> Dict[str, Any]:
-        """Calculate impact with phenomenon-specific metrics."""
+        """Calculate impact with event-specific metrics."""
         pass
     
     @abstractmethod
-    def get_phenomenon_type(self) -> str:
-        """Return phenomenon type identifier."""
+    def get_event_type(self) -> str:
+        """Return event type identifier."""
         pass
     
     def to_dict(self) -> Dict[str, Any]:
-        """Export phenomenon state."""
+        """Export event state."""
         return {
-            "phenomenon_type": self.get_phenomenon_type(),
+            "event_type": self.get_event_type(),
             "n_entities": len(self.entity_ids),
             "has_zones": self.zones is not None,
             "has_impacts": self.impact_metrics is not None,
@@ -72,22 +72,22 @@ class SpatialPhenomenon(ABC):
 ```
 
 #### Task 1.2: Add Base Tests (30 min)
-**File:** `tests/unit/test_base_phenomenon.py`
+**File:** `tests/unit/test_base_event.py`
 
 ```python
-"""Tests for abstract phenomenon base class."""
+"""Tests for abstract event base class."""
 import pytest
 import numpy as np
-from src.core.base.phenomenon import SpatialPhenomenon
+from src.core.base.event import SpatialEvent
 
 def test_cannot_instantiate_abstract_class():
     """Test that abstract class cannot be instantiated."""
     with pytest.raises(TypeError):
-        SpatialPhenomenon([], np.array([]), np.array([]), {})
+        SpatialEvent([], np.array([]), np.array([]), {})
 
 def test_subclass_must_implement_methods():
     """Test that subclass must implement abstract methods."""
-    class IncompletePhenomenon(SpatialPhenomenon):
+    class IncompletePhenomenon(SpatialEvent):
         pass
     
     with pytest.raises(TypeError):
@@ -98,11 +98,11 @@ def test_subclass_must_implement_methods():
 **File:** `src/core/__init__.py`
 
 ```python
-"""DIAS Core Module - Multi-phenomenon spatial analysis."""
+"""DIAS Core Module - Multi-event spatial analysis."""
 
-from src.core.base.phenomenon import SpatialPhenomenon
+from src.core.base.event import SpatialEvent
 
-__all__ = ["SpatialPhenomenon", "jax_ops"]
+__all__ = ["SpatialEvent", "jax_ops"]
 ```
 
 ---
@@ -111,27 +111,27 @@ __all__ = ["SpatialPhenomenon", "jax_ops"]
 
 #### Task 2.1: Create Phenomena Package (15 min)
 ```bash
-mkdir -p src/core/phenomena
-touch src/core/phenomena/__init__.py
+mkdir -p src/core/events
+touch src/core/events/__init__.py
 ```
 
-#### Task 2.2: Implement FloodPhenomenon (1.5 hours)
-**File:** `src/core/phenomena/flood.py`
+#### Task 2.2: Implement FloodEvent (1.5 hours)
+**File:** `src/core/events/flood.py`
 
 Migrate existing `DisasterImpactModel` to:
 
 ```python
-"""Flood disaster phenomenon implementation."""
+"""Flood disaster event implementation."""
 
 from typing import Dict, List, Any
 import numpy as np
 import jax.numpy as jnp
 from scipy.sparse.csgraph import connected_components
 
-from src.core.base.phenomenon import SpatialPhenomenon
+from src.core.base.event import SpatialEvent
 from src.core import jax_ops
 
-class FloodPhenomenon(SpatialPhenomenon):
+class FloodEvent(SpatialEvent):
     """Flood disaster analysis."""
     
     def __init__(
@@ -174,12 +174,12 @@ class FloodPhenomenon(SpatialPhenomenon):
         # Move logic from model.py compute_impact_intensities()
         pass
     
-    def get_phenomenon_type(self) -> str:
+    def get_event_type(self) -> str:
         return "flood"
 ```
 
 #### Task 2.3: Add Helper Factory Function (30 min)
-**File:** `src/core/phenomena/flood.py`
+**File:** `src/core/events/flood.py`
 
 ```python
 def build_flood_model_from_data(
@@ -191,7 +191,7 @@ def build_flood_model_from_data(
     land_value_field: str = "LANDVALUE",
     building_value_field: str = "BLDGVALUE",
     use_geodesic: bool = True,
-) -> FloodPhenomenon:
+) -> FloodEvent:
     """Build flood model from DataFrame (convenience function)."""
     # Extract data
     parcel_ids = data[parcel_field].tolist()
@@ -204,17 +204,17 @@ def build_flood_model_from_data(
     from src.core.model import build_connectivity_matrix
     adjacency_matrix = build_connectivity_matrix(coordinates, use_geodesic)
     
-    # Create phenomenon
-    return FloodPhenomenon(
+    # Create event
+    return FloodEvent(
         parcel_ids, coordinates, adjacency_matrix,
         elevations, land_values, building_values
     )
 ```
 
 #### Task 2.4: Update Tests (1 hour)
-**File:** `tests/unit/test_flood_phenomenon.py`
+**File:** `tests/unit/test_flood_event.py`
 
-Migrate tests from `test_model.py` to work with new `FloodPhenomenon` class.
+Migrate tests from `test_model.py` to work with new `FloodEvent` class.
 
 ---
 
@@ -230,50 +230,50 @@ touch src/core/visualization/__init__.py
 **File:** `src/core/visualization/geojson.py`
 
 ```python
-"""Generic GeoJSON conversion for any spatial phenomenon."""
+"""Generic GeoJSON conversion for any spatial event."""
 
 from typing import Dict, Any
-from src.core.base.phenomenon import SpatialPhenomenon
+from src.core.base.event import SpatialEvent
 
-def phenomenon_to_geojson(
-    phenomenon: SpatialPhenomenon,
+def event_to_geojson(
+    event: SpatialEvent,
     include_zones: bool = True,
     zone_index: int = None,
 ) -> Dict[str, Any]:
     """
-    Convert ANY spatial phenomenon to GeoJSON.
+    Convert ANY spatial event to GeoJSON.
     
     Works for floods, contagion, supply-chain, etc.
     """
     features = []
     
-    for i, entity_id in enumerate(phenomenon.entity_ids):
+    for i, entity_id in enumerate(event.entity_ids):
         feature = {
             "type": "Feature",
             "geometry": {
                 "type": "Point",
                 "coordinates": [
-                    float(phenomenon.coordinates[i, 1]),  # lon
-                    float(phenomenon.coordinates[i, 0]),  # lat
+                    float(event.coordinates[i, 1]),  # lon
+                    float(event.coordinates[i, 0]),  # lat
                 ]
             },
             "properties": {
                 "id": entity_id,
-                "phenomenon_type": phenomenon.get_phenomenon_type(),
+                "event_type": event.get_event_type(),
             }
         }
         
-        # Add all phenomenon attributes
-        for attr_name, attr_values in phenomenon.attributes.items():
+        # Add all event attributes
+        for attr_name, attr_values in event.attributes.items():
             feature["properties"][attr_name] = float(attr_values[i])
         
         # Add zone data if requested
-        if include_zones and phenomenon.zones:
+        if include_zones and event.zones:
             if zone_index is not None:
-                feature["properties"]["zone"] = int(phenomenon.zones[zone_index][i])
+                feature["properties"]["zone"] = int(event.zones[zone_index][i])
             else:
                 # Add all zones
-                for z_idx, zone in enumerate(phenomenon.zones):
+                for z_idx, zone in enumerate(event.zones):
                     feature["properties"][f"zone_{z_idx}"] = int(zone[i])
         
         features.append(feature)
@@ -281,7 +281,7 @@ def phenomenon_to_geojson(
     return {
         "type": "FeatureCollection",
         "features": features,
-        "metadata": phenomenon.to_dict(),
+        "metadata": event.to_dict(),
     }
 ```
 
@@ -291,13 +291,13 @@ def phenomenon_to_geojson(
 
 ### New Files (6 total)
 1. `src/core/base/__init__.py`
-2. `src/core/base/phenomenon.py` - Abstract base class
-3. `src/core/phenomena/__init__.py`
-4. `src/core/phenomena/flood.py` - Refactored flood model
+2. `src/core/base/event.py` - Abstract base class
+3. `src/core/events/__init__.py`
+4. `src/core/events/flood.py` - Refactored flood model
 5. `src/core/visualization/__init__.py`
 6. `src/core/visualization/geojson.py` - Generic converter
-7. `tests/unit/test_base_phenomenon.py`
-8. `tests/unit/test_flood_phenomenon.py` (migrated)
+7. `tests/unit/test_base_event.py`
+8. `tests/unit/test_flood_event.py` (migrated)
 
 ### Modified Files (3 total)
 1. `src/core/__init__.py` - Export new abstractions
@@ -320,15 +320,15 @@ src/core/
 │
 ├── base/                          # NEW - Abstractions
 │   ├── __init__.py
-│   └── phenomenon.py              # SpatialPhenomenon ABC
+│   └── event.py              # SpatialEvent ABC
 │
-├── phenomena/                     # NEW - Implementations
+├── events/                     # NEW - Implementations
 │   ├── __init__.py
-│   └── flood.py                   # FloodPhenomenon
+│   └── flood.py                   # FloodEvent
 │
 └── visualization/                 # NEW - Generic viz
     ├── __init__.py
-    └── geojson.py                 # phenomenon_to_geojson()
+    └── geojson.py                 # event_to_geojson()
 ```
 
 ---
@@ -338,7 +338,7 @@ src/core/
 ### Phase 1 Tests
 ```bash
 # Test abstract base class
-pytest tests/unit/test_base_phenomenon.py -v
+pytest tests/unit/test_base_event.py -v
 
 # Should pass: Cannot instantiate abstract class
 # Should pass: Subclass must implement methods
@@ -346,8 +346,8 @@ pytest tests/unit/test_base_phenomenon.py -v
 
 ### Phase 2 Tests
 ```bash
-# Test flood phenomenon
-pytest tests/unit/test_flood_phenomenon.py -v
+# Test flood event
+pytest tests/unit/test_flood_event.py -v
 
 # Should pass: All existing flood tests
 # Should pass: New abstraction compatibility
@@ -358,7 +358,7 @@ pytest tests/unit/test_flood_phenomenon.py -v
 # Test generic GeoJSON
 pytest tests/unit/test_visualization_geojson.py -v
 
-# Should pass: Converts flood phenomenon
+# Should pass: Converts flood event
 # Should pass: Includes all attributes
 # Should pass: Handles zones correctly
 ```
@@ -378,7 +378,7 @@ model.compute_impacts(3, 0.8)
 
 ### After (New Way)
 ```python
-from src.core.phenomena.flood import build_flood_model_from_data
+from src.core.events.flood import build_flood_model_from_data
 
 flood = build_flood_model_from_data(df)
 flood.compute_zones({"min_water_level": 3, "max_water_level": 14})
@@ -390,7 +390,7 @@ Keep wrapper in `model.py`:
 ```python
 # src/core/model.py
 import warnings
-from src.core.phenomena.flood import build_flood_model_from_data
+from src.core.events.flood import build_flood_model_from_data
 
 def build_model_from_data(*args, **kwargs):
     warnings.warn(
@@ -410,8 +410,8 @@ def build_model_from_data(*args, **kwargs):
 | 1.1 | Create abstract base class | 1.0h |
 | 1.2 | Add base tests | 0.5h |
 | 1.3 | Update core init | 0.5h |
-| 2.1 | Create phenomena package | 0.25h |
-| 2.2 | Implement FloodPhenomenon | 1.5h |
+| 2.1 | Create events package | 0.25h |
+| 2.2 | Implement FloodEvent | 1.5h |
 | 2.3 | Add factory function | 0.5h |
 | 2.4 | Update/migrate tests | 1.0h |
 | 3.1 | Create visualization package | 0.1h |
@@ -427,9 +427,9 @@ Reduced from 8 hours since jax_ops.py already exists!
 After refactoring, verify:
 
 - [ ] Abstract base class defines clear interface
-- [ ] FloodPhenomenon implements all abstract methods
+- [ ] FloodEvent implements all abstract methods
 - [ ] All existing tests pass (with updated imports)
-- [ ] Generic GeoJSON works with FloodPhenomenon
+- [ ] Generic GeoJSON works with FloodEvent
 - [ ] Backward compatibility maintained
 - [ ] No flood-specific logic in base classes
 - [ ] Documentation updated
@@ -441,17 +441,17 @@ After refactoring, verify:
 
 Once refactoring is complete, visualization will:
 
-✅ Work with FloodPhenomenon  
+✅ Work with FloodEvent  
 ✅ Work with future ContagionPhenomenon  
 ✅ Work with future SupplyChainPhenomenon  
-✅ Use same `phenomenon_to_geojson()` for all  
-✅ API endpoints phenomenon-agnostic  
+✅ Use same `event_to_geojson()` for all  
+✅ API endpoints event-agnostic  
 
 ---
 
 **Ready to proceed?** 
 
-With ~6 hours of refactoring, we establish proper multi-phenomenon foundations, then continue with visualization tickets.
+With ~6 hours of refactoring, we establish proper multi-event foundations, then continue with visualization tickets.
 
 **Next Command:** Create branch and start Phase 1?
 

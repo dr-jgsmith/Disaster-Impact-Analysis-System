@@ -9,7 +9,7 @@
 
 ## Overview
 
-Implemented a complete REST API service for DIAS using FastAPI, providing phenomenon-agnostic endpoints for creating, computing, and visualizing spatial phenomena.
+Implemented a complete REST API service for DIAS using FastAPI, providing event-agnostic endpoints for creating, computing, and visualizing spatial events.
 
 ---
 
@@ -34,7 +34,7 @@ Implemented a complete REST API service for DIAS using FastAPI, providing phenom
 - Request models (CreatePhenomenon, ComputeZones, ComputeImpact)
 - Response models (with HATEOAS links)
 - Error models with detailed information
-- Enums for phenomenon types and statuses
+- Enums for event types and statuses
 
 **Models:**
 - `CreatePhenomenonRequest/Response`
@@ -46,16 +46,16 @@ Implemented a complete REST API service for DIAS using FastAPI, providing phenom
 - `ErrorResponse` (standardized errors)
 
 #### `src/api/storage.py` (127 lines)
-- In-memory phenomenon storage
+- In-memory event storage
 - Thread-safe CRUD operations
 - Pagination support
 - Status management
 
 **Methods:**
-- `create()` - Store new phenomenon
-- `get()` / `get_phenomenon()` - Retrieve
+- `create()` - Store new event
+- `get()` / `get_event()` - Retrieve
 - `update_status()` - Update computation status
-- `delete()` - Remove phenomenon
+- `delete()` - Remove event
 - `list_all()` - Paginated listing
 - `count()` - Total count
 
@@ -64,8 +64,8 @@ Implemented a complete REST API service for DIAS using FastAPI, providing phenom
 - API information endpoint
 - Capabilities listing
 
-#### `src/api/routes/phenomena.py` (428 lines)
-- Complete phenomenon management
+#### `src/api/routes/events.py` (428 lines)
+- Complete event management
 - All computation endpoints
 - All visualization endpoints
 - Comprehensive error handling
@@ -100,27 +100,27 @@ GET  /info                      # API capabilities
 ### Phenomenon Management (4 endpoints)
 
 ```
-POST   /api/v1/phenomena        # Create phenomenon
-GET    /api/v1/phenomena/{id}   # Get info
-GET    /api/v1/phenomena        # List all (paginated)
-DELETE /api/v1/phenomena/{id}   # Delete
+POST   /api/v1/events        # Create event
+GET    /api/v1/events/{id}   # Get info
+GET    /api/v1/events        # List all (paginated)
+DELETE /api/v1/events/{id}   # Delete
 ```
 
 ### Computation (2 endpoints)
 
 ```
-POST /api/v1/phenomena/{id}/zones   # Compute zones/scenarios
-POST /api/v1/phenomena/{id}/impact  # Compute impact metrics
+POST /api/v1/events/{id}/zones   # Compute zones/scenarios
+POST /api/v1/events/{id}/impact  # Compute impact metrics
 ```
 
 ### Visualization (5 endpoints)
 
 ```
-GET /api/v1/phenomena/{id}/geojson               # GeoJSON (all)
-GET /api/v1/phenomena/{id}/geojson?scenario=N    # Specific scenario
-GET /api/v1/phenomena/{id}/summary               # Summary stats
-GET /api/v1/phenomena/{id}/zones/{zone}/bounds   # Zone bounding box
-GET /api/v1/phenomena/{id}/zones/{zone}/stats    # Zone statistics
+GET /api/v1/events/{id}/geojson               # GeoJSON (all)
+GET /api/v1/events/{id}/geojson?scenario=N    # Specific scenario
+GET /api/v1/events/{id}/summary               # Summary stats
+GET /api/v1/events/{id}/zones/{zone}/bounds   # Zone bounding box
+GET /api/v1/events/{id}/zones/{zone}/stats    # Zone statistics
 ```
 
 **Total:** 15 endpoints
@@ -133,10 +133,10 @@ GET /api/v1/phenomena/{id}/zones/{zone}/stats    # Zone statistics
 
 **Request:**
 ```bash
-curl -X POST http://localhost:8000/api/v1/phenomena \
+curl -X POST http://localhost:8000/api/v1/events \
   -H "Content-Type: application/json" \
   -d '{
-    "phenomenon_type": "flood",
+    "event_type": "flood",
     "data": {
       "entity_ids": ["P001", "P002", "P003"],
       "coordinates": [[29.76, -95.37], [29.77, -95.38], [29.78, -95.39]],
@@ -154,16 +154,16 @@ curl -X POST http://localhost:8000/api/v1/phenomena \
 ```json
 {
   "id": "flood_abc12345",
-  "phenomenon_type": "flood",
+  "event_type": "flood",
   "n_entities": 3,
   "created_at": "2024-11-21T18:00:00Z",
   "status": "ready",
   "links": {
-    "self": "/api/v1/phenomena/flood_abc12345",
-    "compute_zones": "/api/v1/phenomena/flood_abc12345/zones",
-    "compute_impact": "/api/v1/phenomena/flood_abc12345/impact",
-    "geojson": "/api/v1/phenomena/flood_abc12345/geojson",
-    "summary": "/api/v1/phenomena/flood_abc12345/summary"
+    "self": "/api/v1/events/flood_abc12345",
+    "compute_zones": "/api/v1/events/flood_abc12345/zones",
+    "compute_impact": "/api/v1/events/flood_abc12345/impact",
+    "geojson": "/api/v1/events/flood_abc12345/geojson",
+    "summary": "/api/v1/events/flood_abc12345/summary"
   }
 }
 ```
@@ -172,7 +172,7 @@ curl -X POST http://localhost:8000/api/v1/phenomena \
 
 **Request:**
 ```bash
-curl -X POST http://localhost:8000/api/v1/phenomena/flood_abc12345/zones \
+curl -X POST http://localhost:8000/api/v1/events/flood_abc12345/zones \
   -H "Content-Type: application/json" \
   -d '{
     "scenario_params": {
@@ -185,14 +185,14 @@ curl -X POST http://localhost:8000/api/v1/phenomena/flood_abc12345/zones \
 **Response (200 OK):**
 ```json
 {
-  "phenomenon_id": "flood_abc12345",
+  "event_id": "flood_abc12345",
   "n_scenarios": 12,
   "scenarios_computed": true,
   "computation_time_ms": 150.5,
   "links": {
-    "geojson": "/api/v1/phenomena/flood_abc12345/geojson",
-    "compute_impact": "/api/v1/phenomena/flood_abc12345/impact",
-    "summary": "/api/v1/phenomena/flood_abc12345/summary"
+    "geojson": "/api/v1/events/flood_abc12345/geojson",
+    "compute_impact": "/api/v1/events/flood_abc12345/impact",
+    "summary": "/api/v1/events/flood_abc12345/summary"
   }
 }
 ```
@@ -201,7 +201,7 @@ curl -X POST http://localhost:8000/api/v1/phenomena/flood_abc12345/zones \
 
 **Request:**
 ```bash
-curl -X POST http://localhost:8000/api/v1/phenomena/flood_abc12345/impact \
+curl -X POST http://localhost:8000/api/v1/events/flood_abc12345/impact \
   -H "Content-Type: application/json" \
   -d '{
     "scenario_params": {
@@ -214,7 +214,7 @@ curl -X POST http://localhost:8000/api/v1/phenomena/flood_abc12345/impact \
 **Response (200 OK):**
 ```json
 {
-  "phenomenon_id": "flood_abc12345",
+  "event_id": "flood_abc12345",
   "impact_metrics": {
     "n_scenarios": 12,
     "total_property_loss": [0, 50000, 125000, ...],
@@ -225,8 +225,8 @@ curl -X POST http://localhost:8000/api/v1/phenomena/flood_abc12345/impact \
   },
   "computation_time_ms": 75.2,
   "links": {
-    "geojson": "/api/v1/phenomena/flood_abc12345/geojson",
-    "summary": "/api/v1/phenomena/flood_abc12345/summary"
+    "geojson": "/api/v1/events/flood_abc12345/geojson",
+    "summary": "/api/v1/events/flood_abc12345/summary"
   }
 }
 ```
@@ -235,7 +235,7 @@ curl -X POST http://localhost:8000/api/v1/phenomena/flood_abc12345/impact \
 
 **Request:**
 ```bash
-curl http://localhost:8000/api/v1/phenomena/flood_abc12345/geojson
+curl http://localhost:8000/api/v1/events/flood_abc12345/geojson
 ```
 
 **Response (200 OK):**
@@ -251,7 +251,7 @@ curl http://localhost:8000/api/v1/phenomena/flood_abc12345/geojson
       },
       "properties": {
         "id": "P001",
-        "phenomenon_type": "flood",
+        "event_type": "flood",
         "elevations": 5.0,
         "land_values": 100000.0,
         "building_values": 200000.0,
@@ -263,8 +263,8 @@ curl http://localhost:8000/api/v1/phenomena/flood_abc12345/geojson
     }
   ],
   "metadata": {
-    "phenomenon_id": "flood_abc12345",
-    "phenomenon_type": "flood",
+    "event_id": "flood_abc12345",
+    "event_type": "flood",
     "n_entities": 3,
     "has_zones": true,
     "has_impacts": true
@@ -336,8 +336,8 @@ curl http://localhost:8000/api/v1/phenomena/flood_abc12345/geojson
 ```
 test_api.py::TestHealthEndpoints::test_health_check PASSED
 test_api.py::TestHealthEndpoints::test_api_info PASSED
-test_api.py::TestPhenomenonCRUD::test_create_phenomenon PASSED
-test_api.py::TestPhenomenonCRUD::test_get_phenomenon PASSED
+test_api.py::TestPhenomenonCRUD::test_create_event PASSED
+test_api.py::TestPhenomenonCRUD::test_get_event PASSED
 test_api.py::TestComputation::test_compute_zones PASSED
 test_api.py::TestComputation::test_compute_impact PASSED
 test_api.py::TestVisualization::test_get_geojson PASSED
@@ -354,7 +354,7 @@ test_api.py::TestCompleteWorkflow::test_full_flood_analysis_workflow PASSED
 | `src/api/models.py` | 236 | Pydantic models |
 | `src/api/storage.py` | 127 | In-memory storage |
 | `src/api/routes/health.py` | 43 | Health endpoints |
-| `src/api/routes/phenomena.py` | 428 | Main endpoints |
+| `src/api/routes/events.py` | 428 | Main endpoints |
 | `tests/integration/test_api.py` | 443 | Integration tests |
 | **Total** | **1,373** | **Production + tests** |
 
@@ -432,7 +432,7 @@ When running the service:
 ## Success Metrics
 
 ### Functionality ✅
-- [x] Create, read, update, delete phenomena
+- [x] Create, read, update, delete events
 - [x] Compute zones and impacts
 - [x] Generate GeoJSON for visualization
 - [x] Summary statistics
@@ -448,7 +448,7 @@ When running the service:
 
 ### Architecture ✅
 - [x] Phenomenon-agnostic
-- [x] Extensible to new phenomena
+- [x] Extensible to new events
 - [x] Clean separation of concerns
 - [x] Production-ready code
 

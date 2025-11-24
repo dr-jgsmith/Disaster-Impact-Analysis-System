@@ -1,7 +1,7 @@
 """
-Flood disaster phenomenon implementation.
+Flood disaster sp_event implementation.
 
-This module provides a flood-specific implementation of the SpatialPhenomenon
+This module provides a flood-specific implementation of the SpatialEvent
 base class, enabling flood impact analysis and visualization.
 """
 
@@ -11,19 +11,19 @@ import pandas as pd
 import jax.numpy as jnp
 from scipy.sparse.csgraph import connected_components
 
-from src.core.base.phenomenon import SpatialPhenomenon
+from src.core.base.sp_event import SpatialEvent
 from src.core import jax_ops
 
 
-class FloodPhenomenon(SpatialPhenomenon):
+class FloodEvent(SpatialEvent):
     """
-    Flood disaster analysis phenomenon.
+    Flood disaster analysis sp_event.
     
     Models flood impacts based on elevation, connectivity, and water levels.
     Computes flooded zones, property value loss, and impact metrics.
     
     Example:
-        >>> flood = FloodPhenomenon(
+        >>> flood = FloodEvent(
         ...     parcel_ids=["P001", "P002", "P003"],
         ...     coordinates=np.array([[29.76, -95.37], ...]),
         ...     adjacency_matrix=adjacency,
@@ -48,7 +48,7 @@ class FloodPhenomenon(SpatialPhenomenon):
         building_values: np.ndarray,
     ):
         """
-        Initialize flood phenomenon.
+        Initialize flood sp_event.
         
         Args:
             parcel_ids: List of parcel identifiers
@@ -232,8 +232,8 @@ class FloodPhenomenon(SpatialPhenomenon):
         
         return self.impact_metrics
     
-    def get_phenomenon_type(self) -> str:
-        """Return phenomenon type identifier."""
+    def get_event_type(self) -> str:
+        """Return sp_event type identifier."""
         return "flood"
     
     def to_dataframe(self) -> pd.DataFrame:
@@ -340,7 +340,7 @@ class FloodPhenomenon(SpatialPhenomenon):
 # ============================================================================
 
 
-def build_flood_model_from_data(
+def build_flood_event_from_data(
     data: pd.DataFrame,
     lat_field: str = "LAT",
     lon_field: str = "LON",
@@ -350,11 +350,11 @@ def build_flood_model_from_data(
     building_value_field: str = "BLDGVALUE",
     use_geodesic: bool = True,
     proximity_threshold: Optional[float] = None,
-) -> FloodPhenomenon:
+) -> FloodEvent:
     """
     Build flood model from DataFrame.
     
-    Convenience function to create a FloodPhenomenon from tabular data.
+    Convenience function to create a FloodEvent from tabular data.
     
     Args:
         data: DataFrame with parcel data
@@ -368,7 +368,7 @@ def build_flood_model_from_data(
         proximity_threshold: Distance threshold for adjacency (auto if None)
     
     Returns:
-        Initialized FloodPhenomenon
+        Initialized FloodEvent
     
     Example:
         >>> import pandas as pd
@@ -395,8 +395,8 @@ def build_flood_model_from_data(
         coordinates, use_geodesic, proximity_threshold
     )
     
-    # Create flood phenomenon
-    flood = FloodPhenomenon(
+    # Create flood sp_event
+    flood = FloodEvent(
         parcel_ids=parcel_ids,
         coordinates=coordinates,
         adjacency_matrix=np.array(adjacency_matrix),

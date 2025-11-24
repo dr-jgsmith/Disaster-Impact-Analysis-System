@@ -17,15 +17,15 @@ from pydantic import BaseModel, Field, ConfigDict
 # ============================================================================
 
 
-class PhenomenonType(str, Enum):
-    """Supported phenomenon types."""
+class EventType(str, Enum):
+    """Supported sp_event types."""
     FLOOD = "flood"
     CONTAGION = "contagion"
     SUPPLY_CHAIN = "supply_chain"
 
 
-class PhenomenonStatus(str, Enum):
-    """Phenomenon computation status."""
+class EventStatus(str, Enum):
+    """Event computation status."""
     READY = "ready"
     COMPUTING_ZONES = "computing_zones"
     ZONES_COMPUTED = "zones_computed"
@@ -39,17 +39,17 @@ class PhenomenonStatus(str, Enum):
 # ============================================================================
 
 
-class CreatePhenomenonRequest(BaseModel):
-    """Request to create a new phenomenon."""
+class CreateEventRequest(BaseModel):
+    """Request to create a new sp_event."""
     
-    phenomenon_type: PhenomenonType = Field(
+    event_type: EventType = Field(
         ...,
-        description="Type of spatial phenomenon"
+        description="Type of spatial sp_event"
     )
     
     data: Dict[str, Any] = Field(
         ...,
-        description="Phenomenon data (entity_ids, coordinates, adjacency_matrix, attributes)"
+        description="Event data (entity_ids, coordinates, adjacency_matrix, attributes)"
     )
     
     options: Optional[Dict[str, Any]] = Field(
@@ -60,7 +60,7 @@ class CreatePhenomenonRequest(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "phenomenon_type": "flood",
+                "event_type": "flood",
                 "data": {
                     "entity_ids": ["P001", "P002", "P003"],
                     "coordinates": [[29.76, -95.37], [29.77, -95.38], [29.78, -95.39]],
@@ -85,7 +85,7 @@ class ComputeZonesRequest(BaseModel):
     
     scenario_params: Dict[str, Any] = Field(
         ...,
-        description="Scenario parameters (phenomenon-specific)"
+        description="Scenario parameters (sp_event-specific)"
     )
     
     model_config = ConfigDict(
@@ -105,7 +105,7 @@ class ComputeImpactRequest(BaseModel):
     
     scenario_params: Dict[str, Any] = Field(
         ...,
-        description="Impact parameters (phenomenon-specific)"
+        description="Impact parameters (sp_event-specific)"
     )
     
     model_config = ConfigDict(
@@ -125,8 +125,8 @@ class ComputeImpactRequest(BaseModel):
 # ============================================================================
 
 
-class PhenomenonLinks(BaseModel):
-    """HATEOAS links for phenomenon resource."""
+class EventLinks(BaseModel):
+    """HATEOAS links for sp_event resource."""
     
     self: str
     compute_zones: str
@@ -135,35 +135,35 @@ class PhenomenonLinks(BaseModel):
     summary: str
 
 
-class CreatePhenomenonResponse(BaseModel):
-    """Response after creating a phenomenon."""
+class CreateEventResponse(BaseModel):
+    """Response after creating a sp_event."""
     
-    id: str = Field(..., description="Unique phenomenon identifier")
-    phenomenon_type: PhenomenonType = Field(..., description="Type of phenomenon")
+    id: str = Field(..., description="Unique sp_event identifier")
+    event_type: EventType = Field(..., description="Type of sp_event")
     n_entities: int = Field(..., description="Number of spatial entities")
     created_at: datetime = Field(..., description="Creation timestamp")
-    status: PhenomenonStatus = Field(..., description="Computation status")
-    links: PhenomenonLinks = Field(..., description="HATEOAS links")
+    status: EventStatus = Field(..., description="Computation status")
+    links: EventLinks = Field(..., description="HATEOAS links")
 
 
-class PhenomenonInfo(BaseModel):
-    """Detailed phenomenon information."""
+class EventInfo(BaseModel):
+    """Detailed sp_event information."""
     
     id: str
-    phenomenon_type: PhenomenonType
+    event_type: EventType
     n_entities: int
     created_at: datetime
-    status: PhenomenonStatus
+    status: EventStatus
     has_zones: bool
     has_impacts: bool
     n_scenarios: Optional[int] = None
-    links: PhenomenonLinks
+    links: EventLinks
 
 
 class ComputeZonesResponse(BaseModel):
     """Response after computing zones."""
     
-    phenomenon_id: str
+    event_id: str
     n_scenarios: int
     scenarios_computed: bool
     computation_time_ms: float
@@ -173,17 +173,17 @@ class ComputeZonesResponse(BaseModel):
 class ComputeImpactResponse(BaseModel):
     """Response after computing impact."""
     
-    phenomenon_id: str
+    event_id: str
     impact_metrics: Dict[str, Any]
     computation_time_ms: float
     links: Dict[str, str]
 
 
-class PhenomenonSummary(BaseModel):
-    """Summary statistics for phenomenon."""
+class EventSummary(BaseModel):
+    """Summary statistics for sp_event."""
     
-    phenomenon_id: str
-    phenomenon_type: PhenomenonType
+    event_id: str
+    event_type: EventType
     n_entities: int
     n_scenarios: int
     coordinate_bounds: Dict[str, float]
@@ -194,7 +194,7 @@ class PhenomenonSummary(BaseModel):
 class ZoneBounds(BaseModel):
     """Bounding box for a specific zone."""
     
-    phenomenon_id: str
+    event_id: str
     zone_index: int
     bounds: Optional[Dict[str, float]]
 
@@ -202,15 +202,15 @@ class ZoneBounds(BaseModel):
 class ZoneStatistics(BaseModel):
     """Statistics for a specific zone."""
     
-    phenomenon_id: str
+    event_id: str
     zone_index: int
     statistics: Optional[Dict[str, Any]]
 
 
-class PhenomenonList(BaseModel):
-    """Paginated list of phenomena."""
+class EventList(BaseModel):
+    """Paginated list of sp_events."""
     
-    phenomena: List[PhenomenonInfo]
+    sp_events: List[EventInfo]
     total: int
     page: int
     page_size: int
